@@ -7,6 +7,8 @@
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
+    "web:build": "npm run build",
+    "web:dev": "npm run dev"
     "lint": "next lint",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate deploy"
