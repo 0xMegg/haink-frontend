@@ -4,6 +4,33 @@ import { promises as fs } from 'fs';
 import { guessImageContentType, resolveAbsoluteImagePath } from '@/server/image-storage';
 
 export const runtime = 'nodejs';
+const REMOTE_IMAGE_ORIGIN = process.env.IMAGE_PROXY_ORIGIN?.replace(/\/$/, '');
+
+function encodeStorageKey(key: string) {
+  return key
+    .split('/')
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
+}
+
+async function tryRemoteFetch(storageKey: string) {
+  if (!REMOTE_IMAGE_ORIGIN) return null;
+  const upstreamUrl = `${REMOTE_IMAGE_ORIGIN}/${encodeStorageKey(storageKey)}`;
+  try {
+    const upstream = await fetch(upstreamUrl);
+    if (!upstream.ok || !upstream.body) {
+      console.error('[image-proxy] upstream error', upstream.status, upstream.statusText);
+      return NextResponse.json({ error: '이미지를 불러오지 못했습니다.' }, { status: upstream.status || 502 });
+    }
+    const headers = new Headers();
+    headers.set('Content-Type', upstream.headers.get('content-type') ?? guessImageContentType(storageKey));
+    headers.set('Cache-Control', upstream.headers.get('cache-control') ?? 'public, max-age=31536000, immutable');
+    return new NextResponse(upstream.body, { headers });
+  } catch (error) {
+    console.error('[image-proxy] upstream fetch failed', error);
+    return null;
+  }
+}
 
 export async function GET(_request: Request, context: { params: { path?: string[] } }) {
   const segments = context.params.path ?? [];
@@ -12,6 +39,11 @@ export async function GET(_request: Request, context: { params: { path?: string[
   }
 
   const storageKey = segments.join('/');
+
+  const remote = await tryRemoteFetch(storageKey);
+  if (remote) {
+    return remote;
+  }
 
   let absolutePath: string;
   try {
