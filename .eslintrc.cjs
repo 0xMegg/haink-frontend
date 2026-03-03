@@ -3,7 +3,7 @@ module.exports = {
   extends: ['next/core-web-vitals', 'next/typescript'],
   settings: {
     next: {
-      rootDir: ['apps/admin'],
+      rootDir: ['.'],
     },
   },
   rules: {

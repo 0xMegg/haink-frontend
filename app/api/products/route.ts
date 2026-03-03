@@ -12,7 +12,7 @@ import { EcountApiError } from '@/lib/ecount';
 const codeIssuer = new CodeIssuer();
 
 export async function GET() {
-  const data = await listProducts(50);
+  const data = await listProducts({ limit: 50 });
   return NextResponse.json({ data });
 }
 
