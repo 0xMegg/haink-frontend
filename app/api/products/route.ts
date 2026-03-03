@@ -11,9 +11,23 @@ import { EcountApiError } from '@/lib/ecount';
 
 const codeIssuer = new CodeIssuer();
 
-export async function GET() {
-  const data = await listProducts({ limit: 50 });
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const limitParam = Number(searchParams.get('limit'));
+  const requireImweb = parseBoolParam(searchParams.get('requireImweb'));
+  const requireEcount = parseBoolParam(searchParams.get('requireEcount'));
+
+  const data = await listProducts({
+    limit: Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 50,
+    requireImweb,
+    requireEcount,
+  });
   return NextResponse.json({ data });
+}
+
+function parseBoolParam(value: string | null) {
+  if (!value) return false;
+  return value === '1' || value.toLowerCase() === 'true';
 }
 
 export async function POST(request: Request) {

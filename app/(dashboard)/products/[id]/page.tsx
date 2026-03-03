@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { prisma } from '@/lib/prisma';
+import { fetchInternalApi } from '@/lib/internal-api';
 import { SALES_CHANNEL_OPTIONS } from '@/lib/product-schema';
 import { toChannelOptions } from '@/lib/sales-channels';
 import { ProductForm } from '@/components/products/product-form';
@@ -14,17 +14,80 @@ interface Props {
   params: { id: string };
 }
 
+type ExternalRefDto = {
+  id: string;
+  system: string;
+  external_product_id: string;
+  external_url: string | null;
+  source_of_truth: string | null;
+  raw_snapshot_json: unknown;
+};
+
+type ProductImageDto = {
+  storage_key: string;
+  type: string;
+  sort_order: number;
+};
+
+type OptionValueDto = {
+  option_name: string;
+  display_value: string;
+};
+
+type ChannelVisibilityDto = {
+  channel: string;
+  is_visible: boolean;
+};
+
+type ProductDetailDto = {
+  id: string;
+  master_code: string;
+  name: string;
+  barcode: string;
+  release_date: string;
+  label: string;
+  category_ids_raw: string[] | null;
+  price_krw: number;
+  inventory_track: boolean;
+  stock_qty: number | null;
+  sale_status: string | null;
+  display_status: boolean;
+  description_html: string | null;
+  option_name: string | null;
+  issued_category_id: string;
+  current_category_id: string;
+  sot_mode: 'LEGACY_IMWEB' | 'MASTER';
+  shipping_profile_id: string | null;
+  externalRefs: ExternalRefDto[];
+  optionValues: OptionValueDto[];
+  images: ProductImageDto[];
+  channelVisibility: ChannelVisibilityDto[];
+  shippingProfile: {
+    id: string;
+    name: string;
+    base_country: string;
+    method: string;
+    bundle_allowed: boolean;
+  } | null;
+};
+
+type ShippingProfileDto = {
+  id: string;
+  name: string;
+  base_country: string;
+  method: string;
+  bundle_allowed: boolean;
+};
+
 export default async function EditProductPage({ params }: Props) {
-  const product = await prisma.product.findUnique({
-    where: { id: params.id },
-    include: {
-      externalRefs: true,
-      optionValues: true,
-      images: true,
-      channelVisibility: true,
-      shippingProfile: true,
-    },
-  });
+  const [product, shippingProfiles] = await Promise.all([
+    fetchInternalApi<ProductDetailDto>(`/api/products/${params.id}`, {
+      fallback: null,
+    }),
+    fetchInternalApi<ShippingProfileDto[]>('/api/shipping-profiles', {
+      fallback: [],
+    }),
+  ]);
 
   if (!product) {
     notFound();
@@ -33,7 +96,7 @@ export default async function EditProductPage({ params }: Props) {
   const imweb = product.externalRefs.find((map) => map.system === 'IMWEB');
   const categoryIds = Array.isArray(product.category_ids_raw) ? product.category_ids_raw.join(',') : '';
   const rawSnapshot = imweb?.raw_snapshot_json ? JSON.stringify(imweb.raw_snapshot_json, null, 2) : '';
-  const profileOptions = (await prisma.shippingProfile.findMany({ orderBy: { name: 'asc' } })).map((profile) => ({
+  const profileOptions = shippingProfiles.map((profile) => ({
     id: profile.id,
     name: profile.name,
     description: `${profile.base_country} · ${profile.method}${profile.bundle_allowed ? ' · 묶음배송' : ''}`,
@@ -66,7 +129,7 @@ export default async function EditProductPage({ params }: Props) {
         defaultValues={{
           productId: imweb?.external_product_id ?? '',
           barcode: product.barcode,
-          releaseDate: product.release_date.toISOString().slice(0, 10),
+          releaseDate: new Date(product.release_date).toISOString().slice(0, 10),
           label: product.label,
           name: product.name,
           categoryIdsRaw: categoryIds,

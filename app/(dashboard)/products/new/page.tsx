@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { prisma } from '@/lib/prisma';
+import { fetchInternalApi } from '@/lib/internal-api';
 import { SALES_CHANNEL_OPTIONS } from '@/lib/product-schema';
 import { toChannelOptions } from '@/lib/sales-channels';
 import { ProductForm } from '@/components/products/product-form';
@@ -9,12 +9,18 @@ import { Button } from '@/components/ui/button';
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
+type ShippingProfileDto = {
+  id: string;
+  name: string;
+  base_country: string;
+  method: string;
+  bundle_allowed: boolean;
+};
+
 export default async function NewProductPage() {
-  const [shippingProfiles] = await Promise.all([
-    prisma.shippingProfile.findMany({
-      orderBy: { name: 'asc' },
-    }),
-  ]);
+  const shippingProfiles = await fetchInternalApi<ShippingProfileDto[]>('/api/shipping-profiles', {
+    fallback: [],
+  });
 
   const profileOptions = shippingProfiles.map((profile) => ({
     id: profile.id,
