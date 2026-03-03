@@ -7,7 +7,10 @@ interface FetchInternalApiOptions<T> extends RequestInit {
   expectData?: boolean;
 }
 
-const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
+const isBuildTime =
+  process.env.NEXT_PHASE === 'phase-production-build' ||
+  process.env.npm_lifecycle_event === 'build' ||
+  process.env.SKIP_INTERNAL_API_FETCH === '1';
 
 function resolveBaseUrl() {
   try {

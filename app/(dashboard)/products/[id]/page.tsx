@@ -81,7 +81,7 @@ type ShippingProfileDto = {
 
 export default async function EditProductPage({ params }: Props) {
   const [product, shippingProfiles] = await Promise.all([
-    fetchInternalApi<ProductDetailDto>(`/api/products/${params.id}`, {
+    fetchInternalApi<ProductDetailDto | null>(`/api/products/${params.id}`, {
       fallback: null,
     }),
     fetchInternalApi<ShippingProfileDto[]>('/api/shipping-profiles', {
@@ -147,7 +147,7 @@ export default async function EditProductPage({ params }: Props) {
           currentCategoryId: product.current_category_id,
           sotMode: product.sot_mode,
           externalUrl: imweb?.external_url ?? '',
-          sourceOfTruth: imweb?.source_of_truth ?? 'IMWEB',
+          sourceOfTruth: (imweb?.source_of_truth as 'IMWEB' | 'MASTER' | undefined) ?? 'IMWEB',
           rawSnapshot,
           shippingProfileId: product.shipping_profile_id ?? profileOptions[0]?.id ?? '',
           visibleChannels: visibleChannels.length > 0 ? visibleChannels : channelOptions.map((channel) => channel.id),
