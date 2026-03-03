@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
 
-import { guessImageContentType, resolveAbsoluteImagePath } from '@/server/image-storage';
+import { createSignedImageUrl, guessImageContentType } from '@/server/image-storage';
 
 export const runtime = 'nodejs';
 const REMOTE_IMAGE_ORIGIN = process.env.IMAGE_PROXY_ORIGIN?.replace(/\/$/, '');
@@ -45,26 +44,14 @@ export async function GET(_request: Request, context: { params: { path?: string[
     return remote;
   }
 
-  let absolutePath: string;
   try {
-    absolutePath = resolveAbsoluteImagePath(storageKey);
-  } catch {
-    return NextResponse.json({ error: '잘못된 파일 경로입니다.' }, { status: 400 });
-  }
-
-  try {
-    const file = await fs.readFile(absolutePath);
-    return new NextResponse(file, {
-      headers: {
-        'Content-Type': guessImageContentType(absolutePath),
-        'Cache-Control': 'public, max-age=31536000, immutable',
-      },
-    });
+    const signedUrl = await createSignedImageUrl(storageKey);
+    return NextResponse.redirect(signedUrl, 302);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      return NextResponse.json({ error: '이미지를 찾을 수 없습니다.' }, { status: 404 });
+    if (error instanceof Error && error.message === 'Invalid storage key') {
+      return NextResponse.json({ error: '잘못된 파일 경로입니다.' }, { status: 400 });
     }
-    console.error('[image] failed to load file', error);
+    console.error('[image] failed to sign url', error);
     return NextResponse.json({ error: '이미지를 불러오지 못했습니다.' }, { status: 500 });
   }
 }

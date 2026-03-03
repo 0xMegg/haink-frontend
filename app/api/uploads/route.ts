@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { buildStorageKey, resolveAbsoluteImagePath } from '@/server/image-storage';
+import { buildStorageKey, uploadImage } from '@/server/image-storage';
 
 export const runtime = 'nodejs';
 
@@ -22,11 +20,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: `파일 크기가 너무 큽니다. 최대 ${MAX_SIZE_MB}MB 이하만 허용됩니다.` }, { status: 400 });
     }
 
-    const storageKey = buildStorageKey(file.name, file.type);
-    const absolutePath = resolveAbsoluteImagePath(storageKey);
-    await fs.mkdir(path.dirname(absolutePath), { recursive: true });
+    const productIdParam = formData.get('productId');
+    const productId = typeof productIdParam === 'string' && productIdParam.trim() ? productIdParam.trim() : undefined;
+    const storageKey = buildStorageKey(file.name, file.type, { productId });
     const buffer = Buffer.from(await file.arrayBuffer());
-    await fs.writeFile(absolutePath, buffer);
+    await uploadImage(storageKey, buffer, file.type);
 
     return NextResponse.json({ storageKey });
   } catch (error) {

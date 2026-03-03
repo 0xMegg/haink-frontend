@@ -198,6 +198,9 @@ export function ProductForm({ mode, productId, defaultValues, shippingProfiles, 
         }
         const formData = new FormData();
         formData.append('file', file);
+        if (productId) {
+          formData.append('productId', productId);
+        }
         const res = await fetch('/api/uploads', {
           method: 'POST',
           body: formData,

@@ -1,7 +1,21 @@
 import crypto from 'crypto';
 import path from 'path';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-const DEFAULT_IMAGE_DIR = path.resolve(process.cwd(), 'storage/images');
+const DEFAULT_REGION = process.env.AWS_REGION || 'ap-northeast-2';
+const SIGNED_URL_TTL_SECONDS = Number(process.env.PRODUCT_IMAGE_URL_TTL_SECONDS ?? '300');
+
+const s3 = new S3Client({
+  region: DEFAULT_REGION,
+  credentials:
+    process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
+      ? {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        }
+      : undefined,
+});
 
 function ensureSafeExt(filename: string, mimeType: string) {
   const extFromName = path.extname(filename).toLowerCase();
@@ -15,37 +29,56 @@ function ensureSafeExt(filename: string, mimeType: string) {
   return '.bin';
 }
 
-export function getImageRootDir() {
-  const configured = process.env.PRODUCT_IMAGE_DIR;
-  return configured ? path.resolve(configured) : DEFAULT_IMAGE_DIR;
+function sanitizeSegment(value: string) {
+  return value.replace(/[^a-zA-Z0-9-_]/g, '-');
 }
 
-export function buildStorageKey(filename: string, mimeType: string) {
-  const now = new Date();
-  const parts = [
-    now.getUTCFullYear().toString(),
-    String(now.getUTCMonth() + 1).padStart(2, '0'),
-    String(now.getUTCDate()).padStart(2, '0'),
-  ];
+export function buildStorageKey(filename: string, mimeType: string, options?: { productId?: string | null }) {
   const ext = ensureSafeExt(filename, mimeType);
   const uuid = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
-  return ['products', ...parts, `${uuid}${ext}`].join('/');
+  const productSegment = options?.productId ? sanitizeSegment(options.productId) : 'tmp';
+  return `products/${productSegment}/${uuid}${ext}`;
 }
 
-export function resolveAbsoluteImagePath(storageKey: string) {
+export async function uploadImage(storageKey: string, buffer: Buffer, contentType: string) {
   if (!storageKey) throw new Error('storageKey is required');
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: getBucketName(),
+      Key: normalizeStorageKey(storageKey),
+      Body: buffer,
+      ContentType: contentType,
+    })
+  );
+}
+
+export async function createSignedImageUrl(storageKey: string, options?: { expiresIn?: number }) {
+  if (!storageKey) throw new Error('storageKey is required');
+  const Key = normalizeStorageKey(storageKey);
+  return getSignedUrl(
+    s3,
+    new GetObjectCommand({
+      Bucket: getBucketName(),
+      Key,
+    }),
+    { expiresIn: options?.expiresIn ?? SIGNED_URL_TTL_SECONDS }
+  );
+}
+
+function getBucketName() {
+  const bucket = process.env.PRODUCT_IMAGE_S3_BUCKET;
+  if (!bucket) {
+    throw new Error('PRODUCT_IMAGE_S3_BUCKET 환경변수가 설정되어야 합니다.');
+  }
+  return bucket;
+}
+
+function normalizeStorageKey(storageKey: string) {
   const key = storageKey.replace(/^\/+/, '');
-  const normalized = path.normalize(key);
-  if (normalized.includes('..')) {
+  if (key.includes('..')) {
     throw new Error('Invalid storage key');
   }
-  const root = getImageRootDir();
-  const absolutePath = path.join(root, normalized);
-  const rootWithSlash = root.endsWith(path.sep) ? root : `${root}${path.sep}`;
-  if (!absolutePath.startsWith(rootWithSlash)) {
-    throw new Error('Invalid storage key');
-  }
-  return absolutePath;
+  return key;
 }
 
 export function guessImageContentType(filePath: string) {
