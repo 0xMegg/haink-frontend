@@ -15,6 +15,8 @@ const env = {
   SKIP_AWS: process.env.SKIP_AWS ?? '1',
 };
 
+const shouldSkipPrisma = env.SKIP_PRISMA === '1';
+
 function runBinary(binaryPath, args) {
   const result = spawnSync(process.execPath, [binaryPath, ...args], {
     cwd: projectRoot,
@@ -28,5 +30,10 @@ function runBinary(binaryPath, args) {
 
 console.log(`[build] Using Node version ${process.version}`);
 
-runBinary(prismaCli, ['generate']);
+if (shouldSkipPrisma) {
+  console.log('[build] Skipping Prisma generate because SKIP_PRISMA=1');
+} else {
+  runBinary(prismaCli, ['generate']);
+}
+
 runBinary(nextCli, ['build']);
