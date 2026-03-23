@@ -1,11 +1,13 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import type { Product, ExternalRef, ProductImage } from '@prisma/client';
+
+import type { ProductListItemDto } from '@/lib/product-dtos';
 import { resolveImageUrl } from '@/lib/image-url';
 import { Badge } from '@/components/ui/badge';
+import { ProductDeleteButton } from '@/components/products/product-delete-button';
 
 interface Props {
-  products: (Product & { externalRefs: ExternalRef[]; images: ProductImage[] })[];
+  products: ProductListItemDto[];
 }
 
 export function ProductList({ products }: Props) {
@@ -18,11 +20,11 @@ export function ProductList({ products }: Props) {
       {products.map((product) => {
         const imwebRef = product.externalRefs.find((m) => m.system === 'IMWEB');
         const ecountRef = product.externalRefs.find((m) => m.system === 'ECOUNT');
-        const thumbnail = [...product.images].sort((a, b) => a.sort_order - b.sort_order)[0];
-        const thumbnailUrl = thumbnail ? resolveImageUrl(thumbnail.storage_key) : null;
+        const thumbnail = [...product.images].sort((a, b) => a.sortOrder - b.sortOrder)[0];
+        const thumbnailUrl = thumbnail ? resolveImageUrl(thumbnail.storageKey) : null;
         const ecountStatus = ecountRef
-          ? ecountRef.last_synced_at
-            ? `이카운트 연동 · ${formatDateTime(ecountRef.last_synced_at)}`
+          ? ecountRef.lastSyncedAt
+            ? `이카운트 연동 · ${formatDateTime(ecountRef.lastSyncedAt)}`
             : '이카운트 연동 · 동기화 이력 없음'
           : '이카운트 미연동';
         return (
@@ -30,13 +32,14 @@ export function ProductList({ products }: Props) {
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
                 <p className="font-semibold">{product.name}</p>
-                <p className="text-xs text-muted-foreground">master_code: {product.master_code}</p>
+                <p className="text-xs text-muted-foreground">master_code: {product.masterCode}</p>
               </div>
               <div className="flex items-center gap-2">
-                {product.display_status ? <Badge>진열중</Badge> : <Badge variant="secondary">숨김</Badge>}
+                {product.displayStatus ? <Badge>진열중</Badge> : <Badge variant="secondary">숨김</Badge>}
                 <Link href={`/products/${product.id}`} className="text-sm text-primary underline">
-                  수정
+                  보기/수정
                 </Link>
+                <ProductDeleteButton productId={product.id} productName={product.name} />
               </div>
             </div>
             <div className="mt-2 text-xs text-muted-foreground">
@@ -45,8 +48,8 @@ export function ProductList({ products }: Props) {
                   <Image src={thumbnailUrl} alt={product.name} fill className="object-cover" sizes="96px" />
                 </div>
               ) : null}
-              <p>가격: {product.price_krw.toLocaleString()}원 · 재고관리: {product.inventory_track ? 'Y' : 'N'}</p>
-              <p>IMWEB 상품번호: {imwebRef?.external_product_id ?? '-'}</p>
+              <p>가격: {product.priceKrw.toLocaleString()}원 · 재고관리: {product.inventoryTrack ? 'Y' : 'N'}</p>
+              <p>IMWEB 상품번호: {imwebRef?.externalProductId ?? '-'}</p>
               <p>{ecountStatus}</p>
             </div>
           </div>
@@ -56,13 +59,13 @@ export function ProductList({ products }: Props) {
   );
 }
 
-function formatDateTime(date: Date) {
+function formatDateTime(value: string) {
   try {
     return new Intl.DateTimeFormat('ko-KR', {
       dateStyle: 'short',
       timeStyle: 'short',
-    }).format(date);
+    }).format(new Date(value));
   } catch {
-    return date.toISOString();
+    return value;
   }
 }

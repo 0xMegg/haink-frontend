@@ -1,21 +1,56 @@
 import crypto from 'crypto';
 import path from 'path';
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+
+type AwsClientModule = typeof import('@aws-sdk/client-s3');
+type AwsPresignerModule = typeof import('@aws-sdk/s3-request-presigner');
+type S3Client = import('@aws-sdk/client-s3').S3Client;
 
 const DEFAULT_REGION = process.env.AWS_REGION || 'ap-northeast-2';
 const SIGNED_URL_TTL_SECONDS = Number(process.env.PRODUCT_IMAGE_URL_TTL_SECONDS ?? '300');
 
-const s3 = new S3Client({
-  region: DEFAULT_REGION,
-  credentials:
-    process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
-      ? {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        }
-      : undefined,
-});
+let awsClientModulePromise: Promise<AwsClientModule> | null = null;
+let awsPresignerModulePromise: Promise<AwsPresignerModule> | null = null;
+let cachedS3Client: S3Client | null = null;
+
+function ensureAwsAvailable() {
+  if (process.env.SKIP_AWS === '1') {
+    throw new Error('AWS SDK is disabled during build (SKIP_AWS=1).');
+  }
+}
+
+async function loadAwsClientModule() {
+  ensureAwsAvailable();
+  if (!awsClientModulePromise) {
+    awsClientModulePromise = import('@aws-sdk/client-s3');
+  }
+  return awsClientModulePromise;
+}
+
+async function loadAwsPresignerModule() {
+  ensureAwsAvailable();
+  if (!awsPresignerModulePromise) {
+    awsPresignerModulePromise = import('@aws-sdk/s3-request-presigner');
+  }
+  return awsPresignerModulePromise;
+}
+
+async function getS3Client() {
+  if (cachedS3Client) {
+    return cachedS3Client;
+  }
+  const { S3Client } = await loadAwsClientModule();
+  cachedS3Client = new S3Client({
+    region: DEFAULT_REGION,
+    credentials:
+      process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
+        ? {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+          }
+        : undefined,
+  });
+  return cachedS3Client;
+}
 
 function ensureSafeExt(filename: string, mimeType: string) {
   const extFromName = path.extname(filename).toLowerCase();
@@ -42,6 +77,8 @@ export function buildStorageKey(filename: string, mimeType: string, options?: { 
 
 export async function uploadImage(storageKey: string, buffer: Buffer, contentType: string) {
   if (!storageKey) throw new Error('storageKey is required');
+  const { PutObjectCommand } = await loadAwsClientModule();
+  const s3 = await getS3Client();
   await s3.send(
     new PutObjectCommand({
       Bucket: getBucketName(),
@@ -55,6 +92,9 @@ export async function uploadImage(storageKey: string, buffer: Buffer, contentTyp
 export async function createSignedImageUrl(storageKey: string, options?: { expiresIn?: number }) {
   if (!storageKey) throw new Error('storageKey is required');
   const Key = normalizeStorageKey(storageKey);
+  const { GetObjectCommand } = await loadAwsClientModule();
+  const { getSignedUrl } = await loadAwsPresignerModule();
+  const s3 = await getS3Client();
   return getSignedUrl(
     s3,
     new GetObjectCommand({

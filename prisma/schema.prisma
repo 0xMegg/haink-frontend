@@ -28,8 +28,14 @@ enum SourceOfTruth {
   MASTER
 }
 
+enum WorkspaceMemberRole {
+  OWNER
+  MEMBER
+}
+
 model Product {
   id                  String   @id @default(uuid())
+  workspace_id        String
   master_code         String   @unique
   name                String
   barcode             String   @unique
@@ -50,6 +56,7 @@ model Product {
   created_at          DateTime @default(now())
   updated_at          DateTime @updatedAt
 
+  workspace         Workspace            @relation(fields: [workspace_id], references: [id], onDelete: Restrict)
   shippingProfile   ShippingProfile?     @relation(fields: [shipping_profile_id], references: [id])
   externalRefs      ExternalRef[]
   channelVisibility ChannelVisibility[]
@@ -57,9 +64,53 @@ model Product {
   images            ProductImage[]
   codeHistory       ProductCodeHistory[]
 
+  @@index([workspace_id])
   @@index([issued_category_id])
   @@index([current_category_id])
   @@index([shipping_profile_id])
+}
+
+model User {
+  id              String            @id @default(uuid())
+  email           String            @unique
+  name            String
+  created_at      DateTime          @default(now())
+  updated_at      DateTime @updatedAt
+  ownedWorkspaces Workspace[]       @relation("WorkspaceOwner")
+  memberships     WorkspaceMember[]
+}
+
+model Workspace {
+  id            String            @id @default(uuid())
+  name          String
+  slug          String            @unique
+  owner_user_id String
+  created_at    DateTime          @default(now())
+  updated_at    DateTime          @updatedAt
+
+  owner    User              @relation("WorkspaceOwner", fields: [owner_user_id], references: [id], onDelete: Restrict)
+  members  WorkspaceMember[]
+  products Product[]
+  storeConnections StoreConnection[]
+  externalRefs ExternalRef[]
+
+  @@index([owner_user_id])
+}
+
+model WorkspaceMember {
+  id           String              @id @default(uuid())
+  workspace_id String
+  user_id      String
+  role         WorkspaceMemberRole @default(OWNER)
+  created_at   DateTime            @default(now())
+  updated_at   DateTime            @updatedAt
+
+  workspace Workspace @relation(fields: [workspace_id], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([workspace_id, user_id])
+  @@index([workspace_id])
+  @@index([user_id])
 }
 
 model CodeSequenceByCategory {
@@ -70,6 +121,8 @@ model CodeSequenceByCategory {
 model ExternalRef {
   id                  String         @id @default(uuid())
   product_id          String
+  workspace_id        String?
+  store_connection_id String?
   system              ExternalSystem
   external_product_id String
   external_url        String?        @db.Text
@@ -80,10 +133,32 @@ model ExternalRef {
   created_at          DateTime       @default(now())
   updated_at          DateTime       @updatedAt
 
-  product Product @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  product         Product          @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  workspace       Workspace?       @relation(fields: [workspace_id], references: [id], onDelete: Restrict)
+  storeConnection StoreConnection? @relation(fields: [store_connection_id], references: [id], onDelete: Restrict)
 
   @@unique([system, external_product_id])
+  @@unique([store_connection_id, external_product_id])
   @@index([product_id])
+  @@index([workspace_id])
+  @@index([store_connection_id])
+}
+
+model StoreConnection {
+  id               String         @id @default(uuid())
+  workspace_id     String
+  platform         ExternalSystem
+  store_identifier String
+  store_name       String?
+  created_at       DateTime       @default(now())
+  updated_at       DateTime       @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspace_id], references: [id], onDelete: Restrict)
+  externalRefs ExternalRef[]
+
+  @@unique([workspace_id, platform, store_identifier])
+  @@index([workspace_id])
+  @@index([platform])
 }
 
 enum SalesChannel {

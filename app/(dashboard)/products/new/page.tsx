@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 
 import { fetchInternalApi } from '@/lib/internal-api';
 import { SALES_CHANNEL_OPTIONS } from '@/lib/product-schema';
@@ -18,6 +19,19 @@ type ShippingProfileDto = {
 };
 
 export default async function NewProductPage() {
+  const session = await fetchInternalApi<{
+    onboardingState: 'NO_WORKSPACE' | 'NO_STORE' | 'NO_PRODUCT' | 'READY';
+  } | null>('/api/auth/session', {
+    fallback: null,
+  });
+
+  if (!session) {
+    redirect('/login');
+  }
+  if (session.onboardingState !== 'READY') {
+    redirect('/onboarding');
+  }
+
   const shippingProfiles = await fetchInternalApi<ShippingProfileDto[]>('/api/shipping-profiles', {
     fallback: [],
   });

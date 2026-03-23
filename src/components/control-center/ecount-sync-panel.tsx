@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { mapSyncErrorMessage } from '@/lib/reviewer-readiness';
 
 interface PendingItem {
   id: string;
@@ -24,10 +25,12 @@ interface Props {
 export function EcountSyncPanel({ totalProducts, syncedCount, initialItems }: Props) {
   const [items, setItems] = React.useState(initialItems);
   const [targetId, setTargetId] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
 
   const handleSync = async (productId: string) => {
     try {
       setTargetId(productId);
+      setError(null);
       const res = await fetch(`/api/products/${productId}/sync-ecount`, {
         method: 'POST',
       });
@@ -38,7 +41,9 @@ export function EcountSyncPanel({ totalProducts, syncedCount, initialItems }: Pr
       toast.success(`${data.data?.name ?? '상품'} 이카운트 연동 완료`);
       setItems((prev) => prev.filter((item) => item.id !== productId));
     } catch (error) {
-      const message = error instanceof Error ? error.message : '알 수 없는 오류';
+      const rawMessage = error instanceof Error ? error.message : null;
+      const message = mapSyncErrorMessage(rawMessage);
+      setError(message);
       toast.error(message);
     } finally {
       setTargetId(null);
@@ -55,6 +60,12 @@ export function EcountSyncPanel({ totalProducts, syncedCount, initialItems }: Pr
           전체 {totalProducts.toLocaleString()}건 중 {syncedCount.toLocaleString()}건이 ECOUNT로 동기화되었습니다.
         </p>
       </div>
+      {error ? (
+        <div className="mb-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <p>{error}</p>
+          <p className="mt-1">상품 데이터는 유지됩니다. 환경 설정 확인 후 같은 버튼으로 다시 시도할 수 있습니다.</p>
+        </div>
+      ) : null}
 
       {waitingCount === 0 ? (
         <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">

@@ -9,10 +9,10 @@ import { Label } from '@/components/ui/label';
 
 type ExchangeRateRow = {
   id: string;
-  base_currency: string;
-  target_currency: string;
+  baseCurrency: string;
+  targetCurrency: string;
   rate: string;
-  effective_from: string;
+  effectiveFrom: string;
 };
 
 interface Props {
@@ -142,10 +142,10 @@ export function ExchangeRatePanel({ initialRates }: Props) {
                 rates.map((row) => (
                   <tr key={row.id} className="border-t">
                     <td className="px-3 py-2 font-medium">
-                      {row.base_currency} → {row.target_currency}
+                      {row.baseCurrency} → {row.targetCurrency}
                     </td>
                     <td className="px-3 py-2">{row.rate}</td>
-                    <td className="px-3 py-2 text-xs text-muted-foreground">{row.effective_from}</td>
+                    <td className="px-3 py-2 text-xs text-muted-foreground">{row.effectiveFrom}</td>
                     <td className="px-3 py-2 text-right space-x-2">
                       <Button type="button" variant="ghost" size="sm" onClick={() => handleSelect(row)}>
                         갱신
@@ -210,6 +210,6 @@ function normalizeRow(row: ExchangeRateRow): ExchangeRateRow {
   return {
     ...row,
     rate: Number(row.rate).toFixed(4),
-    effective_from: new Date(row.effective_from).toISOString().slice(0, 10),
+    effectiveFrom: new Date(row.effectiveFrom).toISOString().slice(0, 10),
   };
 }

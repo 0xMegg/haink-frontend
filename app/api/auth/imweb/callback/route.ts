@@ -1,42 +1,47 @@
 import { NextResponse } from 'next/server';
 
-const CALLBACK_SUCCESS_PATH = '/integrations/imweb?status=success';
-const CALLBACK_FAIL_PATH = '/integrations/imweb?status=fail';
+import { readAuthTokenCookie, readWorkspaceIdCookie } from '@/lib/auth-session';
+import { getBackendBaseUrl } from '@/lib/backend-api';
+
+const CALLBACK_SUCCESS_PATH = '/onboarding?store=connected';
+const CALLBACK_FAIL_PATH = '/onboarding?store=failed';
 const BACKEND_EXCHANGE_PATH = '/auth/imweb/exchange';
-const SENSITIVE_KEYWORDS = [
-  'access_token',
-  'refresh_token',
-  'client_secret',
-  'authorization',
-  'bearer',
-  'token',
-];
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
+  const authToken = readAuthTokenCookie();
+  const workspaceId = readWorkspaceIdCookie();
 
   if (!code) {
     return NextResponse.redirect(buildFailUrl('missing_code', request.url));
   }
-
-  const backendBaseUrl = process.env.BACKEND_BASE_URL?.trim();
-  if (!backendBaseUrl) {
-    console.error('[imweb:callback] BACKEND_BASE_URL is not configured');
-    return NextResponse.redirect(buildFailUrl('missing_backend_base_url', request.url));
+  if (!authToken) {
+    return NextResponse.redirect(buildFailUrl('authentication_required', request.url));
+  }
+  if (!workspaceId) {
+    return NextResponse.redirect(buildFailUrl('missing_workspace_context', request.url));
   }
 
-  const backendUrl = buildBackendUrl(backendBaseUrl);
-  const callbackOrigin = `${requestUrl.origin}${requestUrl.pathname}`;
+  let backendUrl: string;
+  try {
+    backendUrl = buildBackendUrl(getBackendBaseUrl());
+  } catch (error) {
+    console.error('[imweb:callback] BACKEND_BASE_URL is not configured', error);
+    return NextResponse.redirect(buildFailUrl('missing_backend_base_url', request.url));
+  }
 
   try {
     const backendResponse = await fetch(backendUrl, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
+        accept: 'application/json',
+        authorization: `Bearer ${authToken}`,
+        'x-workspace-id': workspaceId,
       },
       cache: 'no-store',
-      body: JSON.stringify({ code, redirectUri: callbackOrigin }),
+      body: JSON.stringify({ code }),
     });
 
     if (backendResponse.ok) {
@@ -63,12 +68,12 @@ async function buildReasonFromResponse(response: Response) {
       const data = await response.json();
       const message = extractMessage(data);
       if (message) {
-        return sanitizeReason(message);
+        return normalizeReasonCode(message, response.status);
       }
     } else {
       const text = (await response.text())?.trim();
       if (text) {
-        return sanitizeReason(text);
+        return normalizeReasonCode(text, response.status);
       }
     }
   } catch (error) {
@@ -89,18 +94,23 @@ function extractMessage(payload: unknown) {
   return candidate ?? null;
 }
 
-function sanitizeReason(raw: string) {
-  const trimmed = raw.trim();
-  if (!trimmed) return 'backend_invalid_response';
-  if (containsSensitiveKeyword(trimmed)) {
-    return 'sensitive_redacted';
+function normalizeReasonCode(raw: string, statusCode: number) {
+  const lower = raw.trim().toLowerCase();
+  if (!lower) {
+    return `backend_${statusCode || 520}`;
   }
-  return trimmed.slice(0, 80);
-}
-
-function containsSensitiveKeyword(value: string) {
-  const lower = value.toLowerCase();
-  return SENSITIVE_KEYWORDS.some((keyword) => lower.includes(keyword));
+  if (
+    lower === 'missing_code' ||
+    lower === 'token_exchange_failed' ||
+    lower === 'invalid_imweb_response' ||
+    lower === 'server_error'
+  ) {
+    return lower;
+  }
+  if (/^imweb_\d+$/.test(lower)) {
+    return lower;
+  }
+  return `backend_${statusCode || 520}`;
 }
 
 function buildFailUrl(reason: string, requestUrl: string) {

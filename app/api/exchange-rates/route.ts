@@ -1,7 +1,6 @@
-import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
-import { prisma } from '@/lib/prisma';
+import { proxyBackendJson } from '@/lib/backend-api';
 
 const createSchema = z.object({
   baseCurrency: z.string().min(1),
@@ -10,11 +9,8 @@ const createSchema = z.object({
   effectiveFrom: z.string().min(1),
 });
 
-export async function GET() {
-  const rates = await prisma.exchangeRate.findMany({
-    orderBy: { effective_from: 'desc' },
-  });
-  return NextResponse.json({ data: rates });
+export async function GET(request: Request) {
+  return proxyBackendJson(request, '/exchange-rates');
 }
 
 export async function POST(request: Request) {
@@ -24,21 +20,20 @@ export async function POST(request: Request) {
       ...body,
       rate: typeof body?.rate === 'string' ? Number(body.rate) : body?.rate,
     });
-    const effectiveFrom = new Date(parsed.effectiveFrom);
-    if (Number.isNaN(effectiveFrom.getTime())) {
-      throw new Error('effectiveFrom 값이 올바른 날짜가 아닙니다.');
-    }
-    const created = await prisma.exchangeRate.create({
-      data: {
-        base_currency: parsed.baseCurrency.toUpperCase(),
-        target_currency: parsed.targetCurrency.toUpperCase(),
-        rate: parsed.rate,
-        effective_from: effectiveFrom,
+    return proxyBackendJson(
+      request,
+      '/exchange-rates',
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify(parsed),
       },
-    });
-    return NextResponse.json({ data: created }, { status: 201 });
+      { requireAdminAuth: true }
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : '알 수 없는 오류';
-    return NextResponse.json({ error: message }, { status: 400 });
+    return Response.json({ error: message }, { status: 400 });
   }
 }

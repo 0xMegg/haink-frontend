@@ -51,10 +51,17 @@ export async function fetchInternalApi<T = unknown>(
 
   const response = await fetch(url, {
     ...init,
+    headers: {
+      ...(init.headers ?? {}),
+      ...(headers().get('cookie') ? { cookie: headers().get('cookie') as string } : {}),
+    },
     cache: cache ?? 'no-store',
   });
 
   if (!response.ok) {
+    if (typeof fallback !== 'undefined') {
+      return fallback;
+    }
     throw new Error(`Failed to fetch ${path}: ${response.status}`);
   }
 

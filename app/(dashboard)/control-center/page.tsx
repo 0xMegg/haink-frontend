@@ -13,10 +13,10 @@ type SequenceRow = {
 
 type ExchangeRateRow = {
   id: string;
-  base_currency: string;
-  target_currency: string;
+  baseCurrency: string;
+  targetCurrency: string;
   rate: string;
-  effective_from: string;
+  effectiveFrom: string;
 };
 
 type PendingItem = {
