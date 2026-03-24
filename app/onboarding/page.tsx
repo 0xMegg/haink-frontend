@@ -153,7 +153,7 @@ export default async function OnboardingPage({ searchParams }: PageProps) {
         </div>
         <div className="mt-4 rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-700">
           <p>Backend required env: AUTH_JWT_SECRET, IMWEB_CLIENT_SECRET, ECOUNT credential group</p>
-          <p className="mt-1">문서: `haink-frontend/README.md`, `haink-backend/README.md`</p>
+          <p className="mt-1">문서: frontend README, backend README</p>
           {!envReadiness.ok ? (
             <p className="mt-2 text-amber-800">
               현재 frontend에서 확인된 누락 값: {envReadiness.missing.join(', ')}

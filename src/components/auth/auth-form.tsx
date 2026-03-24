@@ -76,8 +76,8 @@ export function AuthForm() {
   return (
     <div className="mx-auto max-w-md rounded-2xl border bg-white p-6 shadow-sm">
       <div className="mb-6 space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">HAINK Onboarding</p>
-        <h1 className="text-2xl font-semibold text-neutral-950">HAINK 시작하기</h1>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">StoreFlow Onboarding</p>
+        <h1 className="text-2xl font-semibold text-neutral-950">StoreFlow 시작하기</h1>
         <p className="text-sm text-neutral-600">로그인 후 workspace, store connection, import 단계로 바로 이어집니다.</p>
       </div>
 
