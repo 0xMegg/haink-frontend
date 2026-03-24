@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation';
+
 import { fetchInternalApi } from '@/lib/internal-api';
 import { ProductDeletionPanel } from '@/components/control-center/product-deletion-panel';
 import { MasterCodePanel } from '@/components/control-center/master-code-panel';
@@ -40,6 +42,19 @@ type ControlCenterSummary = {
 };
 
 export default async function ControlCenterPage() {
+  const session = await fetchInternalApi<{
+    onboardingState: 'NO_WORKSPACE' | 'NO_STORE' | 'NO_PRODUCT' | 'READY';
+  } | null>('/api/auth/session', {
+    fallback: null,
+  });
+
+  if (!session) {
+    redirect('/login');
+  }
+  if (session.onboardingState !== 'READY') {
+    redirect('/onboarding');
+  }
+
   const summary = await fetchInternalApi<ControlCenterSummary>('/api/control-center/summary', {
     fallback: {
       sequences: [],
