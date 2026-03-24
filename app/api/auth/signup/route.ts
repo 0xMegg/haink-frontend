@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { applySessionCookies } from '@/lib/auth-session';
+import { mapAuthFailureMessage } from '@/lib/auth-feedback';
 import { getBackendBaseUrl, readBackendPayload } from '@/lib/backend-api';
 
 export async function POST(request: Request) {
@@ -18,7 +19,10 @@ export async function POST(request: Request) {
 
     const payload = await readBackendPayload(response);
     if (!payload.ok) {
-      return NextResponse.json({ error: payload.message ?? '회원가입에 실패했습니다.' }, { status: response.status });
+      return NextResponse.json(
+        { error: mapAuthFailureMessage('signup', response.status, payload.message) },
+        { status: response.status }
+      );
     }
 
     const data = payload.data as {

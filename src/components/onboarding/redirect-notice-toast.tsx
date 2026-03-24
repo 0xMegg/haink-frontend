@@ -18,22 +18,30 @@ export function RedirectNoticeToast({ nextAction }: RedirectNoticeToastProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const handledRef = React.useRef(false);
+  const handledReasonsRef = React.useRef<Set<string>>(new Set());
 
   React.useEffect(() => {
     const reason = searchParams.get('reason');
     const from = searchParams.get('from');
+    const auth = searchParams.get('auth');
 
-    if (reason !== 'incomplete_setup' || handledRef.current) {
+    if (auth === 'signup_success' && !handledReasonsRef.current.has('signup_success')) {
+      handledReasonsRef.current.add('signup_success');
+      toast.success('회원가입이 완료되었습니다. 이어서 초기 설정을 진행해 주세요.');
+    }
+
+    if (reason === 'incomplete_setup' && !handledReasonsRef.current.has('incomplete_setup')) {
+      handledReasonsRef.current.add('incomplete_setup');
+      const routeLabel = ROUTE_LABELS[from ?? ''] ?? '요청한 화면';
+      toast.info(`${routeLabel}로 이동하려면 초기 설정을 먼저 완료해야 합니다. 지금은 onboarding에서 ${nextAction} 진행해 주세요.`);
+    }
+
+    if (auth !== 'signup_success' && reason !== 'incomplete_setup') {
       return;
     }
 
-    handledRef.current = true;
-
-    const routeLabel = ROUTE_LABELS[from ?? ''] ?? '요청한 화면';
-    toast.info(`${routeLabel}로 이동하려면 초기 설정을 먼저 완료해야 합니다. 지금은 onboarding에서 ${nextAction} 진행해 주세요.`);
-
     const nextSearchParams = new URLSearchParams(searchParams.toString());
+    nextSearchParams.delete('auth');
     nextSearchParams.delete('reason');
     nextSearchParams.delete('from');
     const nextQuery = nextSearchParams.toString();

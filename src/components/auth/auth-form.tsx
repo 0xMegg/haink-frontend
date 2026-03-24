@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { isValidEmailFormat } from '@/lib/auth-feedback';
 
 type Mode = 'login' | 'signup';
 
@@ -14,6 +15,7 @@ export function AuthForm() {
   const [mode, setMode] = React.useState<Mode>('login');
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [confirmPassword, setConfirmPassword] = React.useState('');
   const [name, setName] = React.useState('');
   const [error, setError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -21,8 +23,27 @@ export function AuthForm() {
   const reason = searchParams.get('reason');
   const reasonMessage = reason === 'auth_required' ? '로그인이 필요합니다.' : null;
 
+  React.useEffect(() => {
+    setError(null);
+  }, [mode]);
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (isSubmitting) {
+      return;
+    }
+
+    const normalizedEmail = email.trim();
+    if (!isValidEmailFormat(normalizedEmail)) {
+      setError('이메일 형식을 다시 확인해 주세요.');
+      return;
+    }
+
+    if (mode === 'signup' && password !== confirmPassword) {
+      setError('비밀번호가 일치하지 않습니다. 다시 확인해 주세요.');
+      return;
+    }
+
     setError(null);
     setIsSubmitting(true);
 
@@ -34,7 +55,7 @@ export function AuthForm() {
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          email,
+          email: normalizedEmail,
           password,
           ...(mode === 'signup' ? { name } : {}),
         }),
@@ -43,7 +64,7 @@ export function AuthForm() {
       if (!response.ok) {
         throw new Error(payload.error ?? '인증 요청에 실패했습니다.');
       }
-      router.replace('/onboarding');
+      router.replace(mode === 'signup' ? '/onboarding?auth=signup_success' : '/onboarding');
       router.refresh();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : '인증 요청에 실패했습니다.');
@@ -81,7 +102,13 @@ export function AuthForm() {
         {mode === 'signup' ? (
           <label className="block space-y-2">
             <span className="text-sm font-medium text-neutral-800">이름</span>
-            <Input value={name} onChange={(event) => setName(event.target.value)} placeholder="홍길동" required />
+            <Input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="홍길동"
+              required
+              disabled={isSubmitting}
+            />
           </label>
         ) : null}
         <label className="block space-y-2">
@@ -92,6 +119,8 @@ export function AuthForm() {
             onChange={(event) => setEmail(event.target.value)}
             placeholder="user@example.com"
             required
+            autoComplete="email"
+            disabled={isSubmitting}
           />
         </label>
         <label className="block space-y-2">
@@ -102,14 +131,30 @@ export function AuthForm() {
             onChange={(event) => setPassword(event.target.value)}
             placeholder="8자 이상"
             required
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            disabled={isSubmitting}
           />
         </label>
+        {mode === 'signup' ? (
+          <label className="block space-y-2">
+            <span className="text-sm font-medium text-neutral-800">Confirm Password</span>
+            <Input
+              type="password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              placeholder="비밀번호 다시 입력"
+              required
+              autoComplete="new-password"
+              disabled={isSubmitting}
+            />
+          </label>
+        ) : null}
 
         {reasonMessage ? <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">{reasonMessage}</p> : null}
         {error ? <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p> : null}
 
         <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? '처리 중...' : mode === 'login' ? '로그인' : '회원가입 후 시작'}
+          {isSubmitting ? (mode === 'login' ? '로그인 중...' : '회원가입 중...') : mode === 'login' ? '로그인' : '회원가입 후 시작'}
         </Button>
       </form>
     </div>
