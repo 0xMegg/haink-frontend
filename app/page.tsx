@@ -6,6 +6,7 @@ import { ProductList } from '@/components/products/product-list';
 import { IntegrationToggleBar } from '@/components/products/integration-toggle-bar';
 import { Button } from '@/components/ui/button';
 import { getOnboardingStateCopy } from '@/lib/reviewer-readiness';
+import { buildOnboardingRedirectPath } from '@/lib/onboarding-redirect';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,7 +29,7 @@ export default async function HomePage({ searchParams }: PageProps) {
     redirect('/login');
   }
   if (session.onboardingState !== 'READY') {
-    redirect('/onboarding');
+    redirect(buildOnboardingRedirectPath('/'));
   }
 
   const imwebOnly = parseBool(searchParams?.imweb);

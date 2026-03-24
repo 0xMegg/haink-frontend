@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { ProductImportPanel } from '@/components/onboarding/product-import-panel';
+import { RedirectNoticeToast } from '@/components/onboarding/redirect-notice-toast';
 import { WorkspaceBootstrapPanel } from '@/components/onboarding/workspace-bootstrap-panel';
 import { Button } from '@/components/ui/button';
 import { fetchInternalApi } from '@/lib/internal-api';
@@ -58,6 +59,7 @@ export default async function OnboardingPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
+      <RedirectNoticeToast nextAction={stateCopy.nextAction} />
       <section className="rounded-2xl border bg-[linear-gradient(135deg,_#f8fafc_0%,_#e0f2fe_100%)] p-6">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">First Value Journey</p>
         <h1 className="mt-2 text-2xl font-semibold text-slate-950">첫 사용자 onboarding</h1>

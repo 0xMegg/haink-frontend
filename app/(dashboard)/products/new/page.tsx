@@ -6,6 +6,7 @@ import { SALES_CHANNEL_OPTIONS } from '@/lib/product-schema';
 import { toChannelOptions } from '@/lib/sales-channels';
 import { ProductForm } from '@/components/products/product-form';
 import { Button } from '@/components/ui/button';
+import { buildOnboardingRedirectPath } from '@/lib/onboarding-redirect';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -29,7 +30,7 @@ export default async function NewProductPage() {
     redirect('/login');
   }
   if (session.onboardingState !== 'READY') {
-    redirect('/onboarding');
+    redirect(buildOnboardingRedirectPath('/products/new'));
   }
 
   const shippingProfiles = await fetchInternalApi<ShippingProfileDto[]>('/api/shipping-profiles', {

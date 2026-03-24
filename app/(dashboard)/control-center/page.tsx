@@ -5,6 +5,7 @@ import { ProductDeletionPanel } from '@/components/control-center/product-deleti
 import { MasterCodePanel } from '@/components/control-center/master-code-panel';
 import { ExchangeRatePanel } from '@/components/control-center/exchange-rate-panel';
 import { EcountSyncPanel } from '@/components/control-center/ecount-sync-panel';
+import { buildOnboardingRedirectPath } from '@/lib/onboarding-redirect';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,7 +53,7 @@ export default async function ControlCenterPage() {
     redirect('/login');
   }
   if (session.onboardingState !== 'READY') {
-    redirect('/onboarding');
+    redirect(buildOnboardingRedirectPath('/control-center'));
   }
 
   const summary = await fetchInternalApi<ControlCenterSummary>('/api/control-center/summary', {
