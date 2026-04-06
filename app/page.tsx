@@ -85,7 +85,7 @@ export default async function HomePage({ searchParams }: PageProps) {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <IntegrationToggleBar imwebOnly={imwebOnly} ecountOnly={ecountOnly} />
-          <ExportButton products={productList.items} />
+          <ExportButton products={products} />
           <Button asChild>
             <Link href="/products/new">상품 등록</Link>
           </Button>

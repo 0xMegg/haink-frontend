@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ProductDeleteButton } from '@/components/products/product-delete-button';
+import { Download, Loader2 } from 'lucide-react';
 
 interface Props {
   products: (ProductListItemDto & { thumbnailUrl?: string | null })[];
@@ -19,6 +20,32 @@ export function ProductList({ products }: Props) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
+  const [exportingId, setExportingId] = useState<string | null>(null);
+
+  const handleExportBadgeImage = async (productId: string, masterCode: string) => {
+    setExportingId(productId);
+    try {
+      const response = await fetch(`/api/products/${productId}/badge-image`);
+      if (!response.ok) {
+        const payload = (await response.json()) as { error?: string };
+        window.alert(payload.error ?? '뱃지 이미지를 내보내지 못했습니다.');
+        return;
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${masterCode}-badge.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      window.alert('뱃지 이미지를 내보내지 못했습니다.');
+    } finally {
+      setExportingId(null);
+    }
+  };
 
   if (products.length === 0) {
     return <p className="text-sm text-muted-foreground">아직 등록된 상품이 없습니다.</p>;
@@ -128,6 +155,22 @@ export function ProductList({ products }: Props) {
                 <Link href={`/products/${product.id}`} className="text-sm text-primary underline">
                   보기/수정
                 </Link>
+                {product.badges && product.badges.length > 0 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleExportBadgeImage(product.id, product.masterCode)}
+                    disabled={exportingId === product.id}
+                  >
+                    {exportingId === product.id ? (
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                    ) : (
+                      <Download className="mr-1 h-3 w-3" />
+                    )}
+                    내보내기
+                  </Button>
+                )}
                 <ProductDeleteButton productId={product.id} productName={product.name} />
               </div>
             </div>
