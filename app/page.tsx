@@ -7,6 +7,7 @@ import { IntegrationToggleBar } from '@/components/products/integration-toggle-b
 import { Button } from '@/components/ui/button';
 import { getOnboardingStateCopy } from '@/lib/reviewer-readiness';
 import { buildOnboardingRedirectPath } from '@/lib/onboarding-redirect';
+import { LandingPage } from '@/components/landing/landing-page';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +27,7 @@ export default async function HomePage({ searchParams }: PageProps) {
   });
 
   if (!session) {
-    redirect('/login');
+    return <LandingPage />;
   }
   if (session.onboardingState !== 'READY') {
     redirect(buildOnboardingRedirectPath('/'));
