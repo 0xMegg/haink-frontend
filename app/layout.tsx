@@ -51,6 +51,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               <Link href="/control-center" className="text-muted-foreground transition hover:text-foreground">
                 제어 센터
               </Link>
+              <Link href="/badge-rules" className="text-muted-foreground transition hover:text-foreground">
+                배지 규칙
+              </Link>
             </nav>
           </header>
           <main>{children}</main>

@@ -6,6 +6,7 @@ import type { ProductDetailDto } from '@/lib/product-dtos';
 import { SALES_CHANNEL_OPTIONS } from '@/lib/product-schema';
 import { toChannelOptions } from '@/lib/sales-channels';
 import { ProductForm } from '@/components/products/product-form';
+import { ScheduledChangesPanel } from '@/components/products/scheduled-changes-panel';
 import { Button } from '@/components/ui/button';
 import { buildOnboardingRedirectPath } from '@/lib/onboarding-redirect';
 
@@ -122,6 +123,7 @@ export default async function EditProductPage({ params }: Props) {
         shippingProfiles={profileOptions}
         channelOptions={channelOptions}
       />
+      <ScheduledChangesPanel productId={product.id} />
     </div>
   );
 }
