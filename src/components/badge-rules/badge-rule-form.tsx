@@ -32,9 +32,13 @@ const conditionSchema = z.object({
   value: z.string().min(1, '값을 입력하세요'),
 });
 
+const hexColorSchema = z.string().regex(/^#[0-9A-Fa-f]{6}$/, '유효한 hex 색상을 입력하세요');
+
 const badgeRuleFormSchema = z.object({
   name: z.string().min(1, '규칙명을 입력하세요'),
   badgeLabel: z.string().min(1, '배지 라벨을 입력하세요'),
+  badgeBgColor: hexColorSchema,
+  badgeTextColor: hexColorSchema,
   priority: z.number().int().min(0),
   displayStartAt: z.string().optional(),
   displayEndAt: z.string().optional(),
@@ -58,6 +62,8 @@ export function BadgeRuleForm({ onCreated }: BadgeRuleFormProps) {
     defaultValues: {
       name: '',
       badgeLabel: '',
+      badgeBgColor: '#FF3B30',
+      badgeTextColor: '#FFFFFF',
       priority: 0,
       displayStartAt: '',
       displayEndAt: '',
@@ -76,6 +82,8 @@ export function BadgeRuleForm({ onCreated }: BadgeRuleFormProps) {
       const body = {
         name: values.name,
         badgeLabel: values.badgeLabel,
+        badgeBgColor: values.badgeBgColor,
+        badgeTextColor: values.badgeTextColor,
         badgeType: 'TEXT',
         priority: values.priority,
         displayStartAt: values.displayStartAt || null,
@@ -125,12 +133,56 @@ export function BadgeRuleForm({ onCreated }: BadgeRuleFormProps) {
           <FormError message={form.formState.errors.badgeLabel?.message} />
         </Field>
 
+        <Field label="배경색">
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              className="h-10 w-10 shrink-0 cursor-pointer rounded border border-input"
+              {...form.register('badgeBgColor')}
+            />
+            <Input
+              placeholder="#FF3B30"
+              maxLength={7}
+              {...form.register('badgeBgColor')}
+            />
+          </div>
+          <FormError message={form.formState.errors.badgeBgColor?.message} />
+        </Field>
+
+        <Field label="글자색">
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              className="h-10 w-10 shrink-0 cursor-pointer rounded border border-input"
+              {...form.register('badgeTextColor')}
+            />
+            <Input
+              placeholder="#FFFFFF"
+              maxLength={7}
+              {...form.register('badgeTextColor')}
+            />
+          </div>
+          <FormError message={form.formState.errors.badgeTextColor?.message} />
+        </Field>
+
+        <Field label="미리보기">
+          <div className="flex h-10 items-center">
+            <span
+              className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+              style={{
+                backgroundColor: form.watch('badgeBgColor'),
+                color: form.watch('badgeTextColor'),
+              }}
+            >
+              {form.watch('badgeLabel') || 'BADGE'}
+            </span>
+          </div>
+        </Field>
+
         <Field label="우선순위">
           <Input type="number" min={0} step={1} {...form.register('priority', { valueAsNumber: true })} />
           <FormError message={form.formState.errors.priority?.message} />
         </Field>
-
-        <div />
 
         <Field label="표시 시작일">
           <Input type="datetime-local" {...form.register('displayStartAt')} />

@@ -15,6 +15,8 @@ export interface BadgeRuleView {
   id: string;
   name: string;
   badgeLabel: string;
+  badgeBgColor?: string;
+  badgeTextColor?: string;
   badgeType: string;
   priority: number;
   isActive: boolean;
@@ -67,7 +69,16 @@ export function BadgeRuleList({ rules, onToggle }: BadgeRuleListProps) {
           <div className="min-w-0 flex-1 space-y-1">
             <div className="flex items-center gap-2">
               <span className="font-medium">{rule.name}</span>
-              <Badge variant="secondary">{rule.badgeLabel}</Badge>
+              {rule.badgeBgColor ? (
+                <span
+                  className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                  style={{ backgroundColor: rule.badgeBgColor, color: rule.badgeTextColor ?? '#FFFFFF' }}
+                >
+                  {rule.badgeLabel}
+                </span>
+              ) : (
+                <Badge variant="secondary">{rule.badgeLabel}</Badge>
+              )}
               <span className="text-xs text-muted-foreground">우선순위: {rule.priority}</span>
             </div>
             <div className="text-xs text-muted-foreground">

@@ -43,7 +43,7 @@ export function MasterCodePanel({ initialSequences }: Props) {
 
     const parsed = Number(row.draft);
     if (!Number.isInteger(parsed) || parsed < 1) {
-      toast.error('시퀀스는 1 이상의 정수여야 합니다.');
+      toast.error('번호는 1 이상의 정수여야 합니다.');
       return;
     }
 
@@ -56,9 +56,9 @@ export function MasterCodePanel({ initialSequences }: Props) {
       });
       const data = await res.json();
       if (!res.ok || !data.data) {
-        throw new Error(data.error ?? '시퀀스 업데이트에 실패했습니다.');
+        throw new Error(data.error ?? '번호 업데이트에 실패했습니다.');
       }
-      toast.success(`${category} → next_seq ${parsed.toLocaleString()}로 갱신 완료`);
+      toast.success(`${category} → 다음 번호 ${parsed.toLocaleString()}로 갱신 완료`);
       setRows((prev) =>
         prev
           .map((item) =>
@@ -85,7 +85,7 @@ export function MasterCodePanel({ initialSequences }: Props) {
       return;
     }
     if (!Number.isInteger(parsedSeq) || parsedSeq < 1) {
-      toast.error('시작 시퀀스는 1 이상의 정수여야 합니다.');
+      toast.error('시작 번호는 1 이상의 정수여야 합니다.');
       return;
     }
     try {
@@ -117,9 +117,9 @@ export function MasterCodePanel({ initialSequences }: Props) {
     <section className="rounded-lg border bg-card p-5 shadow-sm">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h3 className="text-lg font-semibold">마스터코드 진행 관리</h3>
+          <h3 className="text-lg font-semibold">카테고리별 상품 코드 관리</h3>
           <p className="text-sm text-muted-foreground">
-            카테고리별 next_seq 값을 조정하여 master_code 발급 흐름을 제어하세요.
+            카테고리별 자동 생성 코드의 시퀀스를 관리합니다.
           </p>
         </div>
         <div className="rounded-md bg-muted/50 px-3 py-1 text-sm">
@@ -132,7 +132,7 @@ export function MasterCodePanel({ initialSequences }: Props) {
             <tr>
               <th className="pb-2 font-medium">카테고리 ID</th>
               <th className="pb-2 font-medium">진행 상황</th>
-              <th className="pb-2 font-medium">next_seq 조정</th>
+              <th className="pb-2 font-medium">다음 번호</th>
             </tr>
           </thead>
           <tbody>
@@ -194,7 +194,7 @@ export function MasterCodePanel({ initialSequences }: Props) {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="new-seq">next_seq</Label>
+          <Label htmlFor="new-seq">시작 번호</Label>
           <Input
             id="new-seq"
             type="number"

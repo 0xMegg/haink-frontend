@@ -45,9 +45,13 @@ export function ProductList({ products }: Props) {
                 <div className="relative mb-2 h-24 w-24 overflow-hidden rounded-md">
                   <Image src={thumbnailUrl} alt={product.name} fill className="object-cover" sizes="96px" />
                   {product.badges && product.badges.length > 0 && (
-                    <div className="absolute left-1 top-1 flex flex-col gap-1">
+                    <div className="absolute left-1 top-1 flex flex-col gap-0.5">
                       {[...product.badges].sort((a, b) => a.priority - b.priority).slice(0, 2).map((badge) => (
-                        <Badge key={badge.badgeLabel} className="max-w-[88px] truncate text-[10px] px-1.5 py-0">
+                        <Badge
+                          key={badge.badgeLabel}
+                          className="max-w-[72px] truncate rounded-full text-[9px] px-1 py-0 leading-tight shadow-sm"
+                          style={badge.badgeBgColor ? { backgroundColor: badge.badgeBgColor, color: badge.badgeTextColor ?? '#FFFFFF', borderColor: badge.badgeBgColor } : undefined}
+                        >
                           {badge.badgeLabel}
                         </Badge>
                       ))}
@@ -57,7 +61,11 @@ export function ProductList({ products }: Props) {
               ) : product.badges && product.badges.length > 0 ? (
                 <div className="mb-2 flex gap-1">
                   {[...product.badges].sort((a, b) => a.priority - b.priority).slice(0, 2).map((badge) => (
-                    <Badge key={badge.badgeLabel} className="text-[10px] px-1.5 py-0">
+                    <Badge
+                      key={badge.badgeLabel}
+                      className="rounded-full text-[9px] px-1 py-0 leading-tight shadow-sm"
+                      style={badge.badgeBgColor ? { backgroundColor: badge.badgeBgColor, color: badge.badgeTextColor ?? '#FFFFFF', borderColor: badge.badgeBgColor } : undefined}
+                    >
                       {badge.badgeLabel}
                     </Badge>
                   ))}

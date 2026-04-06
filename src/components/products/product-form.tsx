@@ -214,6 +214,52 @@ export function ProductForm({ mode, productId, defaultValues, shippingProfiles }
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <input type="hidden" {...form.register('shippingProfileId')} />
+
+      <section className="space-y-3">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">상품 정보</p>
+          <h3 className="text-lg font-semibold">기본 정보</h3>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="상품명" required>
+            <Input placeholder="상품명" {...form.register('name')} />
+            <FormError message={form.formState.errors.name?.message} />
+          </Field>
+          <Field label="브랜드 / 레이블" required>
+            <Input placeholder="브랜드 또는 레이블명" {...form.register('label')} />
+            <FormError message={form.formState.errors.label?.message} />
+          </Field>
+          <Field label="바코드" required>
+            <Input placeholder="EAN/UPC" {...form.register('barcode')} />
+            <FormError message={form.formState.errors.barcode?.message} />
+          </Field>
+          <Field label="발매일" required>
+            <Input type="date" {...form.register('releaseDate')} />
+            <FormError message={form.formState.errors.releaseDate?.message} />
+          </Field>
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">가격 · 판매</p>
+          <h3 className="text-lg font-semibold">가격 및 판매 설정</h3>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="판매가 (KRW)" required>
+            <Input type="number" min={0} step={1} {...form.register('priceKRW', { valueAsNumber: true })} />
+            <FormError message={form.formState.errors.priceKRW?.message} />
+          </Field>
+          <Field label="카테고리 ID (쉼표 구분)" required>
+            <Input placeholder="CATE9,CATE44" {...form.register('categoryIdsRaw')} />
+            <FormError message={form.formState.errors.categoryIdsRaw?.message} />
+          </Field>
+          <Field label="판매 상태">
+            <Input placeholder="판매중" {...form.register('saleStatus')} />
+          </Field>
+        </div>
+      </section>
+
       <section className="space-y-3">
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Product Media</p>
@@ -224,7 +270,7 @@ export function ProductForm({ mode, productId, defaultValues, shippingProfiles }
             <Input type="file" accept="image/*" multiple onChange={handleImageUpload} disabled={isUploadingImage || isSubmitting} />
             {isUploadingImage ? <p className="text-xs text-muted-foreground">이미지를 업로드하는 중입니다...</p> : null}
             {images.length === 0 ? (
-              <p className="text-xs text-muted-foreground">이미지를 업로드하면 목록에 표시됩니다. 업로드 시 자동으로 storage key가 발급됩니다.</p>
+              <p className="text-xs text-muted-foreground">이미지를 업로드하면 자동으로 등록됩니다.</p>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {images.map((image, index) => {
@@ -258,46 +304,6 @@ export function ProductForm({ mode, productId, defaultValues, shippingProfiles }
 
       <section className="space-y-3">
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">상품 정보</p>
-          <h3 className="text-lg font-semibold">핵심 정보 입력</h3>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field label="IMWEB 상품번호">
-            <Input placeholder="예: 5757" disabled={isImwebIdLocked} {...form.register('productId')} />
-            <FormError message={form.formState.errors.productId?.message} />
-          </Field>
-          <Field label="상품명" required>
-            <Input placeholder="상품명" {...form.register('name')} />
-            <FormError message={form.formState.errors.name?.message} />
-          </Field>
-          <Field label="레이블" required>
-            <Input placeholder="레이블명을 입력하세요." {...form.register('label')} />
-            <FormError message={form.formState.errors.label?.message} />
-          </Field>
-          <Field label="바코드" required>
-            <Input placeholder="EAN/UPC" {...form.register('barcode')} />
-            <FormError message={form.formState.errors.barcode?.message} />
-          </Field>
-          <Field label="발매일" required>
-            <Input type="date" {...form.register('releaseDate')} />
-            <FormError message={form.formState.errors.releaseDate?.message} />
-          </Field>
-          <Field label="판매가 (KRW)" required>
-            <Input type="number" min={0} step={1} {...form.register('priceKRW', { valueAsNumber: true })} />
-            <FormError message={form.formState.errors.priceKRW?.message} />
-          </Field>
-          <Field label="카테고리 ID (쉼표 구분)" required>
-            <Input placeholder="CATE9,CATE44" {...form.register('categoryIdsRaw')} />
-            <FormError message={form.formState.errors.categoryIdsRaw?.message} />
-          </Field>
-          <Field label="판매 상태">
-            <Input placeholder="판매중" {...form.register('saleStatus')} />
-          </Field>
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground">상세 설명</p>
           <h3 className="text-lg font-semibold">상품 상세를 위지윅으로 입력</h3>
         </div>
@@ -310,7 +316,7 @@ export function ProductForm({ mode, productId, defaultValues, shippingProfiles }
       <section className="space-y-3">
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground">재고 · 진열</p>
-          <h3 className="text-lg font-semibold">판매 가능 상태</h3>
+          <h3 className="text-lg font-semibold">재고 · 진열</h3>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           <ToggleField label="재고 관리" description="Y면 수량 입력 필요">
@@ -357,6 +363,19 @@ export function ProductForm({ mode, productId, defaultValues, shippingProfiles }
             </div>
           </section>
         ) : null}
+      </section>
+
+      <section className="space-y-3">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">외부 연동</p>
+          <h3 className="text-lg font-semibold">외부 시스템 연동</h3>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="IMWEB 상품번호">
+            <Input placeholder="예: 5757" disabled={isImwebIdLocked} {...form.register('productId')} />
+            <FormError message={form.formState.errors.productId?.message} />
+          </Field>
+        </div>
       </section>
 
       <div className="flex gap-3">

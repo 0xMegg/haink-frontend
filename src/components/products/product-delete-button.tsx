@@ -7,9 +7,10 @@ import { Button } from '@/components/ui/button';
 interface Props {
   productId: string;
   productName: string;
+  redirectTo?: string;
 }
 
-export function ProductDeleteButton({ productId, productName }: Props) {
+export function ProductDeleteButton({ productId, productName, redirectTo }: Props) {
   const router = useRouter();
 
   const handleDelete = async () => {
@@ -34,7 +35,11 @@ export function ProductDeleteButton({ productId, productName }: Props) {
       return;
     }
 
-    router.refresh();
+    if (redirectTo) {
+      router.push(redirectTo);
+    } else {
+      router.refresh();
+    }
   };
 
   return (

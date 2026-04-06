@@ -7,6 +7,7 @@ import { createSignedImageUrl } from '@/server/image-storage';
 import { ProductForm } from '@/components/products/product-form';
 import { ScheduledChangesPanel } from '@/components/products/scheduled-changes-panel';
 import { Button } from '@/components/ui/button';
+import { ProductDeleteButton } from '@/components/products/product-delete-button';
 import { buildOnboardingRedirectPath } from '@/lib/onboarding-redirect';
 
 export const dynamic = 'force-dynamic';
@@ -71,12 +72,19 @@ export default async function EditProductPage({ params }: Props) {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs text-muted-foreground">master_code: {product.masterCode}</p>
+          <p className="text-xs text-muted-foreground">관리 코드: {product.masterCode}</p>
           <h2 className="text-xl font-semibold">상품 수정</h2>
         </div>
-        <Button variant="outline" asChild>
-          <Link href="/">목록으로</Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <ProductDeleteButton
+            productId={product.id}
+            productName={product.name}
+            redirectTo="/"
+          />
+          <Button variant="outline" asChild>
+            <Link href="/">목록으로</Link>
+          </Button>
+        </div>
       </div>
       <ProductForm
         mode="edit"
