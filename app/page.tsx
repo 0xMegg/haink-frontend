@@ -51,9 +51,13 @@ export default async function HomePage({ searchParams }: PageProps) {
       const thumbnail = [...item.images].sort((a, b) => a.sortOrder - b.sortOrder)[0];
       let thumbnailUrl: string | null = null;
       if (thumbnail?.storageKey) {
-        try {
-          thumbnailUrl = await createSignedImageUrl(thumbnail.storageKey);
-        } catch { /* S3 unavailable */ }
+        if (/^https?:\/\//i.test(thumbnail.storageKey)) {
+          thumbnailUrl = thumbnail.storageKey;
+        } else {
+          try {
+            thumbnailUrl = await createSignedImageUrl(thumbnail.storageKey);
+          } catch { /* S3 unavailable */ }
+        }
       }
       return { ...item, thumbnailUrl };
     })

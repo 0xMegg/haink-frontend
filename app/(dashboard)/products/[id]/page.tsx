@@ -106,9 +106,13 @@ export default async function EditProductPage({ params }: Props) {
               .sort((a, b) => a.sortOrder - b.sortOrder)
               .map(async (image) => {
                 let previewUrl: string | undefined;
-                try {
-                  previewUrl = await createSignedImageUrl(image.storageKey);
-                } catch { /* S3 unavailable */ }
+                if (/^https?:\/\//i.test(image.storageKey)) {
+                  previewUrl = image.storageKey;
+                } else {
+                  try {
+                    previewUrl = await createSignedImageUrl(image.storageKey);
+                  } catch { /* S3 unavailable */ }
+                }
                 return {
                   storageKey: image.storageKey,
                   previewUrl,
