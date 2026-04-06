@@ -5,6 +5,7 @@ import type { ProductListItemDto } from '@/lib/product-dtos';
 import { ProductList } from '@/components/products/product-list';
 import { IntegrationToggleBar } from '@/components/products/integration-toggle-bar';
 import { Button } from '@/components/ui/button';
+import { ExportButton } from '@/components/products/export-button';
 import { getOnboardingStateCopy } from '@/lib/reviewer-readiness';
 import { buildOnboardingRedirectPath } from '@/lib/onboarding-redirect';
 import { LandingPage } from '@/components/landing/landing-page';
@@ -84,6 +85,7 @@ export default async function HomePage({ searchParams }: PageProps) {
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <IntegrationToggleBar imwebOnly={imwebOnly} ecountOnly={ecountOnly} />
+          <ExportButton products={productList.items} />
           <Button asChild>
             <Link href="/products/new">상품 등록</Link>
           </Button>
