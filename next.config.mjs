@@ -8,6 +8,14 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'cdn.imweb.me',
+      },
+    ],
+  },
   webpack: (config) => {
     config.resolve.alias['next/dist/compiled/amphtml-validator'] = path.join(__dirname, 'src/stubs/amphtml-validator.js');
     return config;
