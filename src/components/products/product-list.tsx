@@ -46,6 +46,23 @@ export function ProductList({ products }: Props) {
               {thumbnailUrl ? (
                 <div className="relative mb-2 h-24 w-24 overflow-hidden rounded-md">
                   <Image src={thumbnailUrl} alt={product.name} fill className="object-cover" sizes="96px" />
+                  {product.badges && product.badges.length > 0 && (
+                    <div className="absolute left-1 top-1 flex flex-col gap-1">
+                      {[...product.badges].sort((a, b) => a.priority - b.priority).slice(0, 2).map((badge) => (
+                        <Badge key={badge.badgeLabel} className="max-w-[88px] truncate text-[10px] px-1.5 py-0">
+                          {badge.badgeLabel}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : product.badges && product.badges.length > 0 ? (
+                <div className="mb-2 flex gap-1">
+                  {[...product.badges].sort((a, b) => a.priority - b.priority).slice(0, 2).map((badge) => (
+                    <Badge key={badge.badgeLabel} className="text-[10px] px-1.5 py-0">
+                      {badge.badgeLabel}
+                    </Badge>
+                  ))}
                 </div>
               ) : null}
               <p>가격: {product.priceKrw.toLocaleString()}원 · 재고관리: {product.inventoryTrack ? 'Y' : 'N'}</p>

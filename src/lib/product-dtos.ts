@@ -20,6 +20,7 @@ export interface ProductListItemDto {
     storageKey: string;
     sortOrder: number;
   }>;
+  badges?: { badgeLabel: string; priority: number }[];
   updatedAt: string;
 }
 

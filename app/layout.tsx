@@ -41,22 +41,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               </div>
               {session ? <LogoutButton /> : null}
             </div>
-            {session && (
-              <nav className="mt-2 flex flex-wrap gap-4 text-sm font-medium">
-                <Link href="/" className="text-muted-foreground transition hover:text-foreground">
-                  대시보드
-                </Link>
-                <Link href="/onboarding" className="text-muted-foreground transition hover:text-foreground">
-                  온보딩
-                </Link>
-                <Link href="/control-center" className="text-muted-foreground transition hover:text-foreground">
-                  제어 센터
-                </Link>
-                <Link href="/badge-rules" className="text-muted-foreground transition hover:text-foreground">
-                  배지 규칙
-                </Link>
-              </nav>
-            )}
+            <nav className="mt-2 flex flex-wrap gap-4 text-sm font-medium">
+              <Link href="/" className="text-muted-foreground transition hover:text-foreground">
+                대시보드
+              </Link>
+              <Link href="/control-center" className="text-muted-foreground transition hover:text-foreground">
+                제어 센터
+              </Link>
+              <Link href="/badge-rules" className="text-muted-foreground transition hover:text-foreground">
+                배지 규칙
+              </Link>
+            </nav>
           </header>
           <main>{children}</main>
         </div>
