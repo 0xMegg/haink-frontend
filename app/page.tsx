@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { getOnboardingStateCopy } from '@/lib/reviewer-readiness';
 import { buildOnboardingRedirectPath } from '@/lib/onboarding-redirect';
 import { LandingPage } from '@/components/landing/landing-page';
+import { createSignedImageUrl } from '@/server/image-storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,7 +46,18 @@ export default async function HomePage({ searchParams }: PageProps) {
       },
     }
   );
-  const products = productList.items;
+  const products = await Promise.all(
+    productList.items.map(async (item) => {
+      const thumbnail = [...item.images].sort((a, b) => a.sortOrder - b.sortOrder)[0];
+      let thumbnailUrl: string | null = null;
+      if (thumbnail?.storageKey) {
+        try {
+          thumbnailUrl = await createSignedImageUrl(thumbnail.storageKey);
+        } catch { /* S3 unavailable */ }
+      }
+      return { ...item, thumbnailUrl };
+    })
+  );
   const stateCopy = getOnboardingStateCopy('READY');
   return (
     <div className="space-y-6">

@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { fetchInternalApi } from '@/lib/internal-api';
 import type { ProductDetailDto } from '@/lib/product-dtos';
+import { createSignedImageUrl } from '@/server/image-storage';
 import { ProductForm } from '@/components/products/product-form';
 import { ScheduledChangesPanel } from '@/components/products/scheduled-changes-panel';
 import { Button } from '@/components/ui/button';
@@ -100,13 +101,22 @@ export default async function EditProductPage({ params }: Props) {
           issuedCategoryId: product.issuedCategoryId,
           currentCategoryId: product.currentCategoryId,
           shippingProfileId: product.shippingProfile?.id ?? profileOptions[0]?.id ?? '',
-          images: product.images
-            .sort((a, b) => a.sortOrder - b.sortOrder)
-            .map((image) => ({
-              storageKey: image.storageKey,
-              type: image.type,
-              sortOrder: image.sortOrder,
-            })),
+          images: await Promise.all(
+            product.images
+              .sort((a, b) => a.sortOrder - b.sortOrder)
+              .map(async (image) => {
+                let previewUrl: string | undefined;
+                try {
+                  previewUrl = await createSignedImageUrl(image.storageKey);
+                } catch { /* S3 unavailable */ }
+                return {
+                  storageKey: image.storageKey,
+                  previewUrl,
+                  type: image.type,
+                  sortOrder: image.sortOrder,
+                };
+              })
+          ),
         }}
         shippingProfiles={profileOptions}
       />

@@ -2,12 +2,11 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 import type { ProductListItemDto } from '@/lib/product-dtos';
-import { resolveImageUrl } from '@/lib/image-url';
 import { Badge } from '@/components/ui/badge';
 import { ProductDeleteButton } from '@/components/products/product-delete-button';
 
 interface Props {
-  products: ProductListItemDto[];
+  products: (ProductListItemDto & { thumbnailUrl?: string | null })[];
 }
 
 export function ProductList({ products }: Props) {
@@ -20,8 +19,7 @@ export function ProductList({ products }: Props) {
       {products.map((product) => {
         const imwebRef = product.externalRefs.find((m) => m.system === 'IMWEB');
         const ecountRef = product.externalRefs.find((m) => m.system === 'ECOUNT');
-        const thumbnail = [...product.images].sort((a, b) => a.sortOrder - b.sortOrder)[0];
-        const thumbnailUrl = thumbnail ? resolveImageUrl(thumbnail.storageKey) : null;
+        const thumbnailUrl = product.thumbnailUrl ?? null;
         const ecountStatus = ecountRef
           ? ecountRef.lastSyncedAt
             ? `이카운트 연동 · ${formatDateTime(ecountRef.lastSyncedAt)}`
