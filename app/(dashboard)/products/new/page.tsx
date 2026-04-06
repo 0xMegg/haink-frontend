@@ -2,8 +2,6 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { fetchInternalApi } from '@/lib/internal-api';
-import { SALES_CHANNEL_OPTIONS } from '@/lib/product-schema';
-import { toChannelOptions } from '@/lib/sales-channels';
 import { ProductForm } from '@/components/products/product-form';
 import { Button } from '@/components/ui/button';
 import { buildOnboardingRedirectPath } from '@/lib/onboarding-redirect';
@@ -42,8 +40,6 @@ export default async function NewProductPage() {
     name: profile.name,
     description: `${profile.base_country} · ${profile.method}${profile.bundle_allowed ? ' · 묶음배송' : ''}`,
   }));
-  const channelOptions = toChannelOptions(SALES_CHANNEL_OPTIONS);
-
   if (profileOptions.length === 0) {
     return (
       <div className="space-y-6">
@@ -65,7 +61,7 @@ export default async function NewProductPage() {
           <Link href="/">목록으로</Link>
         </Button>
       </div>
-      <ProductForm mode="create" shippingProfiles={profileOptions} channelOptions={channelOptions} />
+      <ProductForm mode="create" shippingProfiles={profileOptions} />
     </div>
   );
 }

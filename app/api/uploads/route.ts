@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { buildStorageKey, uploadImage } from '@/server/image-storage';
+import { buildStorageKey, uploadImage, createSignedImageUrl } from '@/server/image-storage';
 
 export const runtime = 'nodejs';
 
@@ -26,7 +26,14 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(await file.arrayBuffer());
     await uploadImage(storageKey, buffer, file.type);
 
-    return NextResponse.json({ storageKey });
+    let previewUrl: string | undefined;
+    try {
+      previewUrl = await createSignedImageUrl(storageKey);
+    } catch {
+      // signed URL 생성 실패해도 업로드 자체는 성공이므로 무시
+    }
+
+    return NextResponse.json({ storageKey, previewUrl });
   } catch (error) {
     const message = error instanceof Error ? error.message : '업로드 처리 중 오류가 발생했습니다.';
     console.error('[upload] failed to save file', error);

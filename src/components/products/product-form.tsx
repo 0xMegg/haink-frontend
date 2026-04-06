@@ -9,10 +9,7 @@ import { toast } from 'sonner';
 import {
   productFormSchema,
   type ProductFormValues,
-  SOT_MODE_OPTIONS,
-  SOURCE_OF_TRUTH_OPTIONS,
   type ProductImageInput,
-  type SalesChannel,
 } from '@/lib/product-schema';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -20,7 +17,6 @@ import Image from 'next/image';
 import { resolveImageUrl } from '@/lib/image-url';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { RichTextEditor } from '@/components/ui/rich-text-editor';
@@ -31,18 +27,11 @@ interface ShippingProfileOption {
   description: string;
 }
 
-interface ChannelOption {
-  id: SalesChannel;
-  label: string;
-  description?: string;
-}
-
 interface ProductFormProps {
   mode: 'create' | 'edit';
   productId?: string;
   defaultValues?: Partial<ProductFormValues>;
   shippingProfiles: ShippingProfileOption[];
-  channelOptions: ChannelOption[];
 }
 
 const emptyDefaults: ProductFormValues = {
@@ -62,31 +51,15 @@ const emptyDefaults: ProductFormValues = {
   optionValues: '',
   issuedCategoryId: '',
   currentCategoryId: '',
-  sotMode: 'LEGACY_IMWEB',
-  externalUrl: '',
-  sourceOfTruth: 'IMWEB',
-  rawSnapshot: '',
   images: [],
   shippingProfileId: '',
-  visibleChannels: [],
 };
 
-const selectClassName =
-  'flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
-
-export function ProductForm({ mode, productId, defaultValues, shippingProfiles, channelOptions }: ProductFormProps) {
+export function ProductForm({ mode, productId, defaultValues, shippingProfiles }: ProductFormProps) {
   const router = useRouter();
   const defaultShippingProfileId = defaultValues?.shippingProfileId ?? shippingProfiles[0]?.id ?? '';
-  const defaultChannels =
-    defaultValues?.visibleChannels && defaultValues.visibleChannels.length > 0
-      ? defaultValues.visibleChannels
-      : channelOptions.map((channel) => channel.id);
   const advancedDefaultOpen = Boolean(
-    defaultValues?.productId ||
-      defaultValues?.externalUrl ||
-      defaultValues?.rawSnapshot ||
-      defaultValues?.sourceOfTruth ||
-      defaultValues?.optionName ||
+    defaultValues?.optionName ||
       defaultValues?.optionValues
   );
   const isImwebIdLocked = mode === 'edit' && Boolean(defaultValues?.productId);
@@ -103,13 +76,8 @@ export function ProductForm({ mode, productId, defaultValues, shippingProfiles, 
       optionValues: defaultValues?.optionValues ?? '',
       currentCategoryId: defaultValues?.currentCategoryId ?? '',
       issuedCategoryId: defaultValues?.issuedCategoryId ?? '',
-      sotMode: defaultValues?.sotMode ?? 'LEGACY_IMWEB',
-      sourceOfTruth: defaultValues?.sourceOfTruth ?? 'IMWEB',
-      externalUrl: defaultValues?.externalUrl ?? '',
-      rawSnapshot: defaultValues?.rawSnapshot ?? '',
       images: defaultValues?.images ?? [],
       shippingProfileId: defaultShippingProfileId,
-      visibleChannels: defaultChannels,
     },
   });
 
@@ -141,20 +109,6 @@ export function ProductForm({ mode, productId, defaultValues, shippingProfiles, 
     error?: string;
   };
 
-  const toggleChannel = (channel: SalesChannel, checked: boolean) => {
-    const current = form.getValues('visibleChannels');
-    if (checked) {
-      if (current.includes(channel)) return;
-      form.setValue('visibleChannels', [...current, channel], { shouldDirty: true });
-    } else {
-      form.setValue(
-        'visibleChannels',
-        current.filter((item) => item !== channel),
-        { shouldDirty: true }
-      );
-    }
-  };
-
   const handleSubmit = form.handleSubmit(async (values) => {
     try {
       setSubmitting(true);
@@ -174,7 +128,6 @@ export function ProductForm({ mode, productId, defaultValues, shippingProfiles, 
         form.reset({
           ...emptyDefaults,
           shippingProfileId: shippingProfiles[0]?.id ?? '',
-          visibleChannels: channelOptions.map((channel) => channel.id),
         });
       }
     } catch (error: unknown) {
@@ -212,6 +165,7 @@ export function ProductForm({ mode, productId, defaultValues, shippingProfiles, 
         }
         uploaded.push({
           storageKey: data.storageKey,
+          previewUrl: data.previewUrl,
           type: 'THUMBNAIL',
         });
       }
@@ -274,7 +228,7 @@ export function ProductForm({ mode, productId, defaultValues, shippingProfiles, 
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {images.map((image, index) => {
-                  const url = resolveImageUrl(image.storageKey);
+                  const url = image.previewUrl || resolveImageUrl(image.storageKey);
                   return (
                     <div key={`${image.storageKey}-${index}`} className="space-y-2 rounded-lg border p-3 text-xs">
                       {url ? (
@@ -378,103 +332,30 @@ export function ProductForm({ mode, productId, defaultValues, shippingProfiles, 
       </section>
 
       <section className="space-y-3">
-        <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">판매 채널</p>
-          <h3 className="text-lg font-semibold">노출할 채널 선택</h3>
-        </div>
-        <Field label="판매 채널 노출" required>
-          <div className="grid gap-3 md:grid-cols-2">
-            {channelOptions.map((channel) => {
-              const checked = form.watch('visibleChannels').includes(channel.id);
-              return (
-                <label
-                  key={channel.id}
-                  className={cn(
-                    'flex cursor-pointer flex-col rounded-lg border p-3 text-sm transition',
-                    checked ? 'border-primary bg-primary/5' : 'border-border'
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4"
-                      checked={checked}
-                      onChange={(event) => toggleChannel(channel.id, event.target.checked)}
-                    />
-                    <span className="font-medium">{channel.label}</span>
-                  </div>
-                  {channel.description ? <p className="mt-1 text-xs text-muted-foreground">{channel.description}</p> : null}
-                </label>
-              );
-            })}
-          </div>
-          <FormError message={form.formState.errors.visibleChannels?.message} />
-        </Field>
-      </section>
-
-      <section className="space-y-3">
         <Button
           type="button"
           variant="ghost"
           className="h-auto p-0 text-left text-sm font-medium text-primary underline-offset-2 hover:bg-transparent hover:underline"
           onClick={() => setShowAdvancedFields((prev) => !prev)}
         >
-          {showAdvancedFields ? '외부 연동/고급 필드 숨기기' : '외부 연동/고급 필드 보기'}
+          {showAdvancedFields ? '옵션 설정 숨기기' : '옵션 설정 보기'}
         </Button>
         {showAdvancedFields ? (
-          <div className="space-y-6">
-            <section className="space-y-4 rounded-lg border p-4">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">Connector Layer · IMWEB</p>
-                <h4 className="text-base font-semibold">외부 연동 정보</h4>
-                <p className="text-xs text-muted-foreground">Imweb 매핑이 필요한 경우에만 입력하세요.</p>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="SOT 모드">
-                  <select className={selectClassName} {...form.register('sotMode')}>
-                    {SOT_MODE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                  <FormError message={form.formState.errors.sotMode?.message} />
-                </Field>
-                <Field label="외부 상품 URL">
-                  <Input type="url" placeholder="https://..." {...form.register('externalUrl')} />
-                  <FormError message={form.formState.errors.externalUrl?.message} />
-                </Field>
-                <Field label="Source of Truth">
-                  <select className={selectClassName} {...form.register('sourceOfTruth')}>
-                    {SOURCE_OF_TRUTH_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                  <FormError message={form.formState.errors.sourceOfTruth?.message} />
-                </Field>
-                <Field className="md:col-span-2" label="Raw Snapshot JSON">
-                  <Textarea rows={4} placeholder='{"foo":"bar"}' {...form.register('rawSnapshot')} />
-                </Field>
-              </div>
-            </section>
-            <section className="space-y-4 rounded-lg border p-4">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">옵션 확장</p>
-                <h4 className="text-base font-semibold">필수 옵션 설정</h4>
-                <p className="text-xs text-muted-foreground">필요한 경우에만 입력하세요. 쉼표로 값을 구분합니다.</p>
-              </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <Field label="옵션 이름">
-                  <Input placeholder="예: VERSION" {...form.register('optionName')} />
-                </Field>
-                <Field label="옵션 값 (쉼표 구분)">
-                  <Input placeholder="KARINA,GISELLE" {...form.register('optionValues')} />
-                </Field>
-              </div>
-            </section>
-          </div>
+          <section className="space-y-4 rounded-lg border p-4">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">옵션 확장</p>
+              <h4 className="text-base font-semibold">필수 옵션 설정</h4>
+              <p className="text-xs text-muted-foreground">필요한 경우에만 입력하세요. 쉼표로 값을 구분합니다.</p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="옵션 이름">
+                <Input placeholder="예: 색상" {...form.register('optionName')} />
+              </Field>
+              <Field label="옵션 값 (쉼표 구분)">
+                <Input placeholder="빨강,파랑,검정" {...form.register('optionValues')} />
+              </Field>
+            </div>
+          </section>
         ) : null}
       </section>
 

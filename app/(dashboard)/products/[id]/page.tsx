@@ -3,8 +3,6 @@ import { notFound, redirect } from 'next/navigation';
 
 import { fetchInternalApi } from '@/lib/internal-api';
 import type { ProductDetailDto } from '@/lib/product-dtos';
-import { SALES_CHANNEL_OPTIONS } from '@/lib/product-schema';
-import { toChannelOptions } from '@/lib/sales-channels';
 import { ProductForm } from '@/components/products/product-form';
 import { ScheduledChangesPanel } from '@/components/products/scheduled-changes-panel';
 import { Button } from '@/components/ui/button';
@@ -54,16 +52,11 @@ export default async function EditProductPage({ params }: Props) {
 
   const imweb = product.externalRefs.find((map) => map.system === 'IMWEB');
   const categoryIds = product.categoryIds.join(',');
-  const rawSnapshot = imweb?.rawSnapshot ? JSON.stringify(imweb.rawSnapshot, null, 2) : '';
   const profileOptions = shippingProfiles.map((profile) => ({
     id: profile.id,
     name: profile.name,
     description: `${profile.base_country} · ${profile.method}${profile.bundle_allowed ? ' · 묶음배송' : ''}`,
   }));
-  const channelOptions = toChannelOptions(SALES_CHANNEL_OPTIONS);
-  const visibleChannels = product.channelVisibility
-    .filter((entry) => entry.isVisible)
-    .map((entry) => entry.channel as (typeof SALES_CHANNEL_OPTIONS)[number]);
 
   if (profileOptions.length === 0) {
     return (
@@ -106,12 +99,7 @@ export default async function EditProductPage({ params }: Props) {
             .join(','),
           issuedCategoryId: product.issuedCategoryId,
           currentCategoryId: product.currentCategoryId,
-          sotMode: product.sotMode,
-          externalUrl: imweb?.externalUrl ?? '',
-          sourceOfTruth: (imweb?.sourceOfTruth as 'IMWEB' | 'MASTER' | undefined) ?? 'IMWEB',
-          rawSnapshot,
           shippingProfileId: product.shippingProfile?.id ?? profileOptions[0]?.id ?? '',
-          visibleChannels: visibleChannels.length > 0 ? visibleChannels : channelOptions.map((channel) => channel.id),
           images: product.images
             .sort((a, b) => a.sortOrder - b.sortOrder)
             .map((image) => ({
@@ -121,7 +109,6 @@ export default async function EditProductPage({ params }: Props) {
             })),
         }}
         shippingProfiles={profileOptions}
-        channelOptions={channelOptions}
       />
       <ScheduledChangesPanel productId={product.id} />
     </div>

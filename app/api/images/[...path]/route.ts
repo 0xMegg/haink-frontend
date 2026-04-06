@@ -46,7 +46,14 @@ export async function GET(_request: Request, context: { params: { path?: string[
 
   try {
     const signedUrl = await createSignedImageUrl(storageKey);
-    return NextResponse.redirect(signedUrl, 302);
+    const s3Response = await fetch(signedUrl);
+    if (!s3Response.ok || !s3Response.body) {
+      return NextResponse.json({ error: '이미지를 불러오지 못했습니다.' }, { status: s3Response.status || 502 });
+    }
+    const headers = new Headers();
+    headers.set('Content-Type', s3Response.headers.get('content-type') ?? guessImageContentType(storageKey));
+    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    return new NextResponse(s3Response.body, { headers });
   } catch (error) {
     if (error instanceof Error && error.message === 'Invalid storage key') {
       return NextResponse.json({ error: '잘못된 파일 경로입니다.' }, { status: 400 });
