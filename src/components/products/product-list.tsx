@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -16,32 +16,69 @@ interface Props {
   products: (ProductListItemDto & { thumbnailUrl?: string | null })[];
 }
 
+/** Thumbnail + badge overlay — shared between display and export */
+function ThumbnailWithBadges({
+  thumbnailUrl,
+  alt,
+  badges,
+  innerRef,
+}: {
+  thumbnailUrl: string;
+  alt: string;
+  badges: Array<{ badgeLabel: string; badgeBgColor?: string; badgeTextColor?: string; priority: number }>;
+  innerRef?: React.Ref<HTMLDivElement>;
+}) {
+  const sorted = [...badges].sort((a, b) => a.priority - b.priority).slice(0, 2);
+
+  return (
+    <div ref={innerRef} className="relative h-24 w-24 overflow-hidden rounded-md">
+      <Image src={thumbnailUrl} alt={alt} fill className="object-cover" sizes="96px" />
+      {sorted.length > 0 && (
+        <div className="absolute left-1 top-1 flex flex-col gap-0.5">
+          {sorted.map((badge) => (
+            <Badge
+              key={badge.badgeLabel}
+              className="max-w-[72px] truncate rounded-full text-[9px] px-1 py-0 leading-tight shadow-sm"
+              style={badge.badgeBgColor ? { backgroundColor: badge.badgeBgColor, color: badge.badgeTextColor ?? '#FFFFFF', borderColor: badge.badgeBgColor } : undefined}
+            >
+              {badge.badgeLabel}
+            </Badge>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ProductList({ products }: Props) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isDeleting, setIsDeleting] = useState(false);
   const [exportingId, setExportingId] = useState<string | null>(null);
+  const thumbnailRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  const setThumbnailRef = (id: string) => (el: HTMLDivElement | null) => {
+    if (el) {
+      thumbnailRefs.current.set(id, el);
+    } else {
+      thumbnailRefs.current.delete(id);
+    }
+  };
 
   const handleExportBadgeImage = async (productId: string, masterCode: string) => {
+    const el = thumbnailRefs.current.get(productId);
+    if (!el) return;
+
     setExportingId(productId);
     try {
-      const response = await fetch(`/api/products/${productId}/badge-image`);
-      if (!response.ok) {
-        const payload = (await response.json()) as { error?: string | { message?: string } };
-        const err = payload.error;
-        const message = typeof err === 'string' ? err : err?.message ?? '뱃지 이미지를 내보내지 못했습니다.';
-        window.alert(message);
-        return;
-      }
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+      const { toPng } = await import('html-to-image');
+      const dataUrl = await toPng(el, { pixelRatio: 4 });
       const a = document.createElement('a');
-      a.href = url;
+      a.href = dataUrl;
       a.download = `${masterCode}-badge.png`;
       document.body.appendChild(a);
       a.click();
       a.remove();
-      URL.revokeObjectURL(url);
     } catch {
       window.alert('뱃지 이미지를 내보내지 못했습니다.');
     } finally {
@@ -138,6 +175,7 @@ export function ProductList({ products }: Props) {
             ? `이카운트 연동 · ${formatDateTime(ecountRef.lastSyncedAt)}`
             : '이카운트 연동 · 동기화 이력 없음'
           : '이카운트 미연동';
+        const hasBadges = product.badges && product.badges.length > 0;
         return (
           <div key={product.id} className="rounded-lg border p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -157,7 +195,7 @@ export function ProductList({ products }: Props) {
                 <Link href={`/products/${product.id}`} className="text-sm text-primary underline">
                   보기/수정
                 </Link>
-                {product.badges && product.badges.length > 0 && (
+                {hasBadges && thumbnailUrl && (
                   <Button
                     type="button"
                     size="sm"
@@ -178,25 +216,17 @@ export function ProductList({ products }: Props) {
             </div>
             <div className="mt-2 text-xs text-muted-foreground">
               {thumbnailUrl ? (
-                <div className="relative mb-2 h-24 w-24 overflow-hidden rounded-md">
-                  <Image src={thumbnailUrl} alt={product.name} fill className="object-cover" sizes="96px" />
-                  {product.badges && product.badges.length > 0 && (
-                    <div className="absolute left-1 top-1 flex flex-col gap-0.5">
-                      {[...product.badges].sort((a, b) => a.priority - b.priority).slice(0, 2).map((badge) => (
-                        <Badge
-                          key={badge.badgeLabel}
-                          className="max-w-[72px] truncate rounded-full text-[9px] px-1 py-0 leading-tight shadow-sm"
-                          style={badge.badgeBgColor ? { backgroundColor: badge.badgeBgColor, color: badge.badgeTextColor ?? '#FFFFFF', borderColor: badge.badgeBgColor } : undefined}
-                        >
-                          {badge.badgeLabel}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+                <div className="mb-2">
+                  <ThumbnailWithBadges
+                    thumbnailUrl={thumbnailUrl}
+                    alt={product.name}
+                    badges={hasBadges ? product.badges! : []}
+                    innerRef={hasBadges ? setThumbnailRef(product.id) : undefined}
+                  />
                 </div>
-              ) : product.badges && product.badges.length > 0 ? (
+              ) : hasBadges ? (
                 <div className="mb-2 flex gap-1">
-                  {[...product.badges].sort((a, b) => a.priority - b.priority).slice(0, 2).map((badge) => (
+                  {[...product.badges!].sort((a, b) => a.priority - b.priority).slice(0, 2).map((badge) => (
                     <Badge
                       key={badge.badgeLabel}
                       className="rounded-full text-[9px] px-1 py-0 leading-tight shadow-sm"
