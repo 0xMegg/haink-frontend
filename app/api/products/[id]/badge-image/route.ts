@@ -57,7 +57,13 @@ export async function GET(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: `백엔드 요청 실패: ${message}` },
+      {
+        error: `백엔드 요청 실패: ${message}`,
+        debug: {
+          hasBackendUrl: !!process.env.BACKEND_BASE_URL,
+          backendUrl: process.env.BACKEND_BASE_URL?.replace(/\/\/.*@/, '//***@').slice(0, 40),
+        },
+      },
       { status: 500 }
     );
   }
