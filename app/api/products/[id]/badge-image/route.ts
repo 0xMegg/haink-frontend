@@ -54,9 +54,10 @@ export async function GET(
         'cache-control': 'no-store',
       },
     });
-  } catch {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: '백엔드 요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.' },
+      { error: `백엔드 요청 실패: ${message}` },
       { status: 500 }
     );
   }
