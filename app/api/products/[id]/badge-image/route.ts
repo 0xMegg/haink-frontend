@@ -36,8 +36,10 @@ export async function GET(
       const text = await response.text();
       let message = '뱃지 이미지를 가져오지 못했습니다.';
       try {
-        const json = JSON.parse(text) as { error?: string };
-        if (json.error) message = json.error;
+        const json = JSON.parse(text) as { error?: string | { message?: string } };
+        const err = json.error;
+        if (typeof err === 'string') message = err;
+        else if (err?.message) message = err.message;
       } catch { /* not JSON */ }
       return NextResponse.json({ error: message }, { status: response.status });
     }

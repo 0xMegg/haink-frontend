@@ -27,8 +27,10 @@ export function ProductList({ products }: Props) {
     try {
       const response = await fetch(`/api/products/${productId}/badge-image`);
       if (!response.ok) {
-        const payload = (await response.json()) as { error?: string };
-        window.alert(payload.error ?? '뱃지 이미지를 내보내지 못했습니다.');
+        const payload = (await response.json()) as { error?: string | { message?: string } };
+        const err = payload.error;
+        const message = typeof err === 'string' ? err : err?.message ?? '뱃지 이미지를 내보내지 못했습니다.';
+        window.alert(message);
         return;
       }
       const blob = await response.blob();
